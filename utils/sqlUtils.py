@@ -16,6 +16,14 @@ Base = declarative_base()
 
 # Base是用来给模型类继承的，类似django中的models.Model
 # 模型类，tablename指表名，如果数据库中没有这个表会自动创建，有表则会沿用
+class user(Base):
+    __tablename__ = "user"
+    uid = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    uname = Column(String(100))
+    uprofile = Column(String(500))
+    upwd = Column(String(64))
+
+
 class qiandao(Base):
     __tablename__ = "qiandao"
     qd_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
