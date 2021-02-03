@@ -14,8 +14,7 @@ session = SessionLocal()
 Base = declarative_base()
 
 
-# Base是用来给模型类继承的，类似django中的models.Model
-# 模型类，tablename指表名，如果数据库中没有这个表会自动创建，有表则会沿用
+# 用户表
 class user(Base):
     __tablename__ = "user"
     uid = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -24,6 +23,7 @@ class user(Base):
     upwd = Column(String(64))
 
 
+# 用户签到表
 class qiandao(Base):
     __tablename__ = "qiandao"
     qd_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -31,11 +31,23 @@ class qiandao(Base):
     qd_time = Column(DateTime)
 
 
+# 用户Token存储表
 class tokenList(Base):
     __tablename__ = "tokenList"
     uid = Column(Integer, primary_key=True, index=True)
     token = Column(String(40))
     expire_time = Column(DateTime)
+
+
+# 好习惯模板表
+class goodHabits(Base):
+    __tablename__ = "goodHabits"
+    hid = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    cuid = Column(Integer)
+    hname = Column(String(500))
+    hcontent = Column(String(5000))
+    hcategory = Column(String(500), default="其他")
+    htime = Column(DateTime)
 
 
 Base.metadata.create_all(bind=engine)

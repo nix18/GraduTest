@@ -21,10 +21,10 @@ async def read_root():
 # 查询
 @app.get("/query")
 async def query(uid: int, token: str):
-    if veriToken.verificationToken(uid, token):
+    if veriToken.verificationToken(uid, token) != -1:
         pass
     else:
-        return {"Error": "Login Expired"}
+        return {"Error": "登陆错误"}
     qd_list = []
     qd = sql.session.query(sql.qiandao).all()
     sql.session.close()
@@ -51,9 +51,10 @@ async def register(uname: str, uprofile: str, upwd: str):
             new_user = sql.user(uname=uname, uprofile=uprofile, upwd=upwd)
             sql.session.add(new_user)
             sql.session.commit()
-            return {"Msg": "Register Success"}
-    except Exception as e:
-        return {"Error": "Sql Error , Pls Contact: " + adminMail + "reason: " + str(e)}
+            return {"Msg": "注册成功"}
+    except:
+        traceback.print_exc()
+        return {"Error": "数据库错误 , 请联系: " + adminMail}
 
 
 # 登录
@@ -62,7 +63,7 @@ async def login(uname: str, upwd: str):
     cuser = sql.session.query(sql.user).filter(sql.user.uname == uname).first()
     # 判空
     if cuser is None:
-        return {"Error": "Login Failed"}
+        return {"Error": "登录失败"}
     cpwd = cuser.upwd
     cuid = cuser.uid
     if upwd == cpwd:  # 验证账号密码
@@ -79,25 +80,57 @@ async def login(uname: str, upwd: str):
         sql.session.commit()
         return {"Token": token}
     else:
-        return {"Error": "Login Failed"}
+        return {"Error": "登录失败"}
 
 
 # 签到
 @app.get("/qiandao")
 async def qiandao(uname: str, token: str):
     try:
-        stokenlist = sql.session.query(sql.tokenList) \
-            .join(sql.user, sql.tokenList.uid == sql.user.uid).filter(sql.user.uname == uname).first()
-        if stokenlist is not None:
-            if stokenlist.token == token and datetime.datetime.now() < stokenlist.expire_time:
-                new_qd = sql.qiandao(uid=stokenlist.uid, qd_time=datetime.datetime.now())
-                sql.session.add(new_qd)
-                sql.session.commit()
-                return {"Msg": "签到成功"}
-        return {"Msg": "签到失败，凭据出错"}
-    except Exception:
+        cuid = veriToken.verificationToken(uname, token)
+        if cuid != -1:
+            new_qd = sql.qiandao(uid=cuid, qd_time=datetime.datetime.now())
+            sql.session.add(new_qd)
+            sql.session.commit()
+            return {"Msg": "签到成功"}
+        return {"Error": "签到失败，凭据出错"}
+    except:
         traceback.print_exc()
-        return {"Msg": "签到失败，服务器内部错误"}
+        return {"Error": "签到失败，服务器内部错误"}
+
+
+# 添加好习惯
+@app.post("/addhabit")
+async def add_habit(uid: int, token: str, hname: str, hcontent: str, hcategory: str = None):
+    cuid = veriToken.verificationToken(uid, token)
+    try:
+        if cuid != -1:
+            new_habit = sql.goodHabits(cuid=cuid, hname=hname, hcontent=hcontent,
+                                       hcategory=hcategory, htime=datetime.datetime.now())
+            sql.session.add(new_habit)
+            sql.session.commit()
+            return {"Msg": "习惯添加成功"}
+        else:
+            return {"Error": "习惯添加失败，凭据失效"}
+    except:
+        return {"Error": "习惯添加失败，服务器内部错误"}
+
+
+# 查询好习惯 f'{hname}'为格式化字符串，注意引号
+@app.get("/selhabits")
+async def sel_habit(hname: str = None, hcategory: str = None):
+    if hname is None:
+        if hcategory is None:
+            habits = sql.session.query(sql.goodHabits).all()
+        else:
+            habits = sql.session.query(sql.goodHabits).filter(sql.goodHabits.hcategory.like(f'%{hcategory}%')).all()
+    else:
+        if hcategory is None:
+            habits = sql.session.query(sql.goodHabits).filter(sql.goodHabits.hname.like(f'%{hname}%')).all()
+        else:
+            habits = sql.session.query(sql.goodHabits).filter(
+                sql.goodHabits.hname.like(f'%{hname}%'), sql.goodHabits.hcategory.like(f'%{hcategory}%')).all()
+    return habits
 
 
 @app.get("/items/{item_id}")
