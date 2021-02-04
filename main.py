@@ -118,7 +118,7 @@ async def add_habit(uid: int, token: str, hname: str, hcontent: str, hcategory: 
 
 # 查询好习惯 f'{hname}'为格式化字符串，注意引号
 @app.get("/selhabits")
-async def sel_habit(hname: str = None, hcategory: str = None):
+async def sel_habits(hname: str = None, hcategory: str = None):
     if hname is None:
         if hcategory is None:
             habits = sql.session.query(sql.goodHabits).all()
@@ -131,6 +131,36 @@ async def sel_habit(hname: str = None, hcategory: str = None):
             habits = sql.session.query(sql.goodHabits).filter(
                 sql.goodHabits.hname.like(f'%{hname}%'), sql.goodHabits.hcategory.like(f'%{hcategory}%')).all()
     return habits
+
+
+@app.get("/selmyhabits")
+async def sel_my_habits(uid: int, token: str):
+    cuid = veriToken.verificationToken(uid, token)
+    if cuid != -1:
+        return sql.session.query(sql.goodHabits).filter(sql.goodHabits.cuid == cuid).all()
+    return {"Error": "查询自定义习惯失败，凭据失效"}
+
+
+@app.get("/modhabit")
+async def mod_habit(uid: int, token: str, hid: int, hname: str = None, hcontent: str = None, hcategory: str = None):
+    cuid = veriToken.verificationToken(uid, token)
+    if cuid != -1:
+        if tuple([hid]) in sql.session.query(sql.goodHabits.hid).filter(sql.goodHabits.cuid == cuid).all():
+            if hname is not None:
+                sql.session.query(sql.goodHabits).filter(sql.goodHabits.hid == hid) \
+                    .update({sql.goodHabits.hname: hname})
+                sql.session.commit()
+            if hcontent is not None:
+                sql.session.query(sql.goodHabits).filter(sql.goodHabits.hid == hid) \
+                    .update({sql.goodHabits.hcontent: hcontent})
+                sql.session.commit()
+            if hcategory is not None:
+                sql.session.query(sql.goodHabits).filter(sql.goodHabits.hid == hid) \
+                    .update({sql.goodHabits.hcategory: hcategory})
+                sql.session.commit()
+            return {"Msg": "修改成功"}
+        return {"Error": "修改失败，无权操作他人的习惯"}
+    return {"Error": "修改失败，凭据失效"}
 
 
 @app.get("/items/{item_id}")
