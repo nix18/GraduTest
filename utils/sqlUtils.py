@@ -50,4 +50,20 @@ class goodHabits(Base):
     htime = Column(DateTime)
 
 
+# 积分表
+class credit(Base):
+    __tablename__ = "credit"
+    uid = Column(Integer, primary_key=True, index=True)
+    creditsum = Column(Integer)
+
+
+# 积分记录表
+class creditdetail(Base):
+    __tablename__ = "creditdetail"
+    uid = Column(Integer, primary_key=True, index=True)
+    creditnum = Column(Integer)  # 积分数额
+    creditdesc = Column(String(500))  # 积分描述
+    ctime = Column(DateTime)  # 记录时间
+
+
 Base.metadata.create_all(bind=engine)
