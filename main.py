@@ -2,6 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 import datetime
 import utils.sqlUtils as sql
+import utils.creditUtils as credit
 import utils.veriToken as veriToken
 import hashlib
 import traceback
@@ -95,8 +96,11 @@ async def qiandao(uname: str, token: str):
         if cuid != -1:
             new_qd = sql.qiandao(uid=cuid, qd_time=datetime.datetime.now())
             sql.session.add(new_qd)
-            sql.session.commit()
-            return {"Msg": "签到成功"}
+            if credit.creditAdd(cuid, 10) == 1:
+                sql.session.commit()
+                return {"Msg": "签到成功，积分+10"}
+            else:
+                raise Exception
         return {"Error": "签到失败，凭据出错"}
     except:
         traceback.print_exc()
