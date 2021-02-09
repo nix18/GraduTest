@@ -88,6 +88,8 @@ async def login(uname: str, upwd: str):
         return {"Error": "登录失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+# FIXME
+# 积分限制
 # 签到
 @app.post("/qiandao")
 async def qiandao(uname: str, token: str):

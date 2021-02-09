@@ -16,3 +16,6 @@ def creditAdd(uid: int, creditnum: int):
             sql.session.commit()
             return 1
         return 0
+
+# TODO
+# 积分记录
