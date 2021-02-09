@@ -80,7 +80,7 @@ async def login(uname: str, upwd: str):
                 sql.session.query(sql.tokenList).filter(sql.tokenList.uid == cuid) \
                     .update({"token": token, "expire_time": timenext})
             sql.session.commit()
-            return {"Token": token}
+            return {"Uid": cuid, "Token": token}
         else:
             return {"Error": "登录失败"}
     except:
@@ -89,7 +89,7 @@ async def login(uname: str, upwd: str):
 
 
 # 签到
-@app.get("/qiandao")
+@app.post("/qiandao")
 async def qiandao(uname: str, token: str):
     try:
         cuid = veriToken.verificationToken(uname, token)
@@ -105,6 +105,24 @@ async def qiandao(uname: str, token: str):
     except:
         traceback.print_exc()
         return {"Error": "签到失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
+@app.post("/invalidateToken")
+@app.post("/logout")
+async def invalidate_token(uid: int, token: str):
+    cuid = veriToken.verificationToken(uid, token)
+    try:
+        if cuid != -1:
+            rtn = sql.session.query(sql.tokenList).filter(sql.tokenList.uid == cuid).delete()
+            sql.session.commit()
+            if rtn == 1:
+                return {"Msg": "登出成功"}
+            else:
+                raise Exception
+        return {"Msg": "登出失败，凭据失效"}
+    except:
+        traceback.print_exc()
+        return {"Msg": "登出失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 # 添加好习惯
@@ -158,7 +176,7 @@ async def sel_my_habits(uid: int, token: str):
         return {"Error": "查询自定义习惯失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
-@app.get("/modhabit")
+@app.post("/modhabit")
 async def mod_habit(uid: int, token: str, hid: int, hname: str = None, hcontent: str = None, hcategory: str = None):
     cuid = veriToken.verificationToken(uid, token)
     try:
@@ -184,7 +202,7 @@ async def mod_habit(uid: int, token: str, hid: int, hname: str = None, hcontent:
         return {"Error": "修改失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
-@app.get("/delhabit")
+@app.post("/delhabit")
 async def del_habit(uid: int, token: str, hid: int):
     cuid = veriToken.verificationToken(uid, token)
     try:
