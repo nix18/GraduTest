@@ -1,6 +1,9 @@
 import uvicorn
 from fastapi import FastAPI
 import datetime
+
+from sqlalchemy import func
+
 import utils.sqlUtils as sql
 import utils.creditUtils as credit
 import utils.veriToken as veriToken
@@ -88,14 +91,17 @@ async def login(uname: str, upwd: str):
         return {"Error": "登录失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
-# FIXME
-# 积分限制
 # 签到
 @app.post("/qiandao")
 async def qiandao(uname: str, token: str):
     try:
         cuid = veriToken.verificationToken(uname, token)
         if cuid != -1:
+            sql.session.commit()  # 清除查询缓存
+            if sql.session.query(sql.qiandao).filter(
+                    sql.qiandao.uid == cuid,
+                    func.to_days(sql.qiandao.qd_time) == func.to_days(func.now())).first() is not None:
+                return {"Error": "签到失败，你今天已经签到过了"}
             new_qd = sql.qiandao(uid=cuid, qd_time=datetime.datetime.now())
             sql.session.add(new_qd)
             if credit.creditAdd(cuid, 10) == 1:
