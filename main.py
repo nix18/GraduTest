@@ -90,7 +90,7 @@ async def login(uname: str, upwd: str):
         traceback.print_exc()
         return {"Error": "登录失败，服务器内部错误" + " 请联系: " + adminMail}
 
-
+# TODO 连签积分加成，达到积分完成习惯
 # 签到
 @app.post("/qiandao")
 async def qiandao(uname: str, token: str):
