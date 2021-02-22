@@ -90,23 +90,39 @@ async def login(uname: str, upwd: str):
         traceback.print_exc()
         return {"Error": "登录失败，服务器内部错误" + " 请联系: " + adminMail}
 
-# TODO 连签积分加成，达到积分完成习惯
+
+# TODO 达到积分完成习惯
 # 签到
 @app.post("/qiandao")
 async def qiandao(uname: str, token: str):
+    global lqcount
     try:
         cuid = veriToken.verificationToken(uname, token)
         if cuid != -1:
             sql.session.commit()  # 清除查询缓存
             if sql.session.query(sql.qiandao).filter(
                     sql.qiandao.uid == cuid,
-                    func.to_days(sql.qiandao.qd_time) == func.to_days(func.now())).first() is not None:
+                    func.to_days(sql.qiandao.last_qd_time) == func.to_days(func.now())).first() is not None:
                 return {"Error": "签到失败，你今天已经签到过了"}
-            new_qd = sql.qiandao(uid=cuid, qd_time=datetime.datetime.now())
-            sql.session.add(new_qd)
-            if credit.creditAdd(cuid, 10) == 1:
+            lqobj = sql.session.query(sql.qiandao).filter(sql.qiandao.uid == cuid).first()
+            if lqobj is None:
+                lqcount = 1
+                new_qd = sql.qiandao(uid=cuid, last_qd_time=datetime.datetime.now(), lq_count=1)
+                sql.session.add(new_qd)
+            else:
+                lqdate = lqobj.last_qd_time
+                lqcount = lqobj.lq_count
+                if lqdate.date() == datetime.datetime.now().date() - datetime.timedelta(days=1):
+                    lqcount = (lqcount + 1) % 8
+                    if lqcount == 0:
+                        lqcount = 1
+                else:
+                    lqcount = 1
+                sql.session.query(sql.qiandao).filter(sql.qiandao.uid == cuid).update(
+                    {sql.qiandao.last_qd_time: datetime.datetime.now(), sql.qiandao.lq_count: lqcount})
+            if credit.creditAdd(cuid, 10 * lqcount, "每日签到") == 1:  # 连签积分加成
                 sql.session.commit()
-                return {"Msg": "签到成功，积分+10"}
+                return {"Msg": "签到成功，积分+" + str(10 * lqcount)}
             else:
                 raise Exception
         return {"Error": "签到失败，凭据出错"}

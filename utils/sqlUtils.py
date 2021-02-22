@@ -26,9 +26,9 @@ class user(Base):
 # 用户签到表
 class qiandao(Base):
     __tablename__ = "qiandao"
-    qd_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    uid = Column(Integer)
-    qd_time = Column(DateTime)
+    uid = Column(Integer, primary_key=True, index=True)
+    last_qd_time = Column(DateTime)  # 最后签到时间
+    lq_count = Column(Integer)  # 连签天数
 
 
 # 用户Token存储表
@@ -60,7 +60,8 @@ class credit(Base):
 # 积分记录表
 class creditdetail(Base):
     __tablename__ = "creditdetail"
-    uid = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    uid = Column(Integer, index=True)
     creditnum = Column(Integer)  # 积分数额
     creditdesc = Column(String(500))  # 积分描述
     ctime = Column(DateTime)  # 记录时间
