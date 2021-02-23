@@ -1,3 +1,6 @@
+import time
+from threading import Thread
+
 import uvicorn
 from fastapi import FastAPI
 import datetime
@@ -242,5 +245,24 @@ async def del_habit(uid: int, token: str, hid: int):
         return {"Error": "删除失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+# TODO 好习惯top10生成 每小时1次更新
+class genhabitplaza(Thread):
+    def __init__(self):
+        super().__init__()
+        print("线程已初始化")
+
+    def run(self):
+        while True:
+            print("已更新习惯广场")
+            time.sleep(5)
+
+
+# TODO 好习惯广场 top10习惯+自己的习惯
+@app.get("/habitplaza")
+async def habitplaza():
+    return
+
+
 if __name__ == '__main__':
+    genhabitplaza().start()  # 启动更新习惯广场线程
     uvicorn.run(app='main:app', host="127.0.0.1", port=8000, reload=True, debug=True)
