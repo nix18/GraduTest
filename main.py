@@ -152,6 +152,33 @@ async def invalidate_token(uid: int, token: str):
         return {"Msg": "登出失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+# 获取积分总数目
+@app.post("/getCredit")
+async def get_credit(uid: int, token: str):
+    cuid = veriToken.verificationToken(uid, token)
+    try:
+        if cuid != -1:
+            return {"Uid": cuid, "CreditSum": credit.getCredit(cuid)[0]}
+        else:
+            return {"Error": "查询积分失败，凭据失效"}
+    except:
+        traceback.print_exc()
+        return {"Error": "查询积分失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
+@app.post("/creditLottery")
+async def credit_lottery(uid: int, token: str):
+    cuid = veriToken.verificationToken(uid, token)
+    try:
+        if cuid != -1:
+            return {"Uid": cuid, "Index": credit.creditLotteryDuo(cuid, 10)}
+        else:
+            return {"Error": "积分抽奖失败，凭据失效"}
+    except:
+        traceback.print_exc()
+        return {"Error": "积分抽奖失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
 # 添加好习惯
 @app.post("/addhabit")
 async def add_habit(uid: int, token: str, hname: str, hcontent: str, hcategory: str = None):
@@ -253,8 +280,8 @@ class genhabitplaza(Thread):
 
     def run(self):
         while True:
-            print("已更新习惯广场")
-            time.sleep(5)
+            print("已更新习惯广场 " + str(datetime.datetime.now()))
+            time.sleep(10)
 
 
 # TODO 好习惯广场 top10习惯+自己的习惯
