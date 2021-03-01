@@ -22,6 +22,16 @@ def creditAdd(uid: int, creditnum: int, creditdesc: str):
         return 0
 
 
+def creditConsume(uid: int, creditnum: int, creditdesc: str):
+    num = getCredit(uid)
+    if num is None:
+        creditAdd(uid, 0, "积分初始化")
+        num = [0]
+    if creditnum > num[0]:
+        return 0
+    return creditAdd(uid, -creditnum, creditdesc)
+
+
 # TODO
 # 积分记录
 def creditDetail(uid: int, creditnum: int, creditdesc: str, ctime: datetime.datetime):
@@ -33,7 +43,44 @@ def creditDetail(uid: int, creditnum: int, creditdesc: str, ctime: datetime.date
 
 
 def getCredit(uid: int):
+    sql.session.commit()
     return sql.session.query(sql.credit.creditsum).filter(sql.credit.uid == uid).first()
+
+
+def operateCreditlotsum(uid: int, type: int):
+    """
+    小保底计数操作
+    :param uid:
+    :param type: 操作类型 0 查询 1 置零
+    :return:
+    """
+    if type == 0:
+        sql.session.commit()
+        return sql.session.query(sql.credit.lotterysum).filter(sql.credit.uid == uid).first()
+    if type == 1:
+        ret = sql.session.query(sql.credit).filter(sql.credit.uid == uid).update(
+            {sql.credit.lotterysum: 0},
+            synchronize_session=False)
+        sql.session.commit()
+        return ret
+
+
+def operateCreditlotSsum(uid: int, type: int):
+    """
+    大保底计数操作
+    :param uid:
+    :param type: 操作类型 0 查询 1 置零
+    :return:
+    """
+    if type == 0:
+        sql.session.commit()
+        return sql.session.query(sql.credit.lotterySsum).filter(sql.credit.uid == uid).first()
+    if type == 1:
+        ret = sql.session.query(sql.credit).filter(sql.credit.uid == uid).update(
+            {sql.credit.lotterySsum: 0},
+            synchronize_session=False)
+        sql.session.commit()
+        return ret
 
 
 def weighted_random(items):
@@ -49,24 +96,38 @@ def weighted_random(items):
 
 # 单次抽奖
 def creditLottery(uid: int):
-    ret = creditAdd(uid, -10, "积分抽奖")
+    ret = creditConsume(uid, 10, "积分抽奖")
     if ret == 1:
+        ret1 = sql.session.query(sql.credit).filter(sql.credit.uid == uid).update(
+            {sql.credit.lotterysum: sql.credit.lotterysum + 1, sql.credit.lotterySsum: sql.credit.lotterySsum + 1},
+            synchronize_session=False)  # 抽奖时首先将大小保底计数+1
+        sql.session.commit()
+        if ret1 == 0:
+            return 0
         index = weighted_random([('Gold', 0.6), ('Silver', 5.1), ('Bronze', 94.3)])
+        if operateCreditlotsum(uid, 0)[0] >= 10:
+            index = 'Silver'
+        if operateCreditlotSsum(uid, 0)[0] >= 90:
+            index = 'Gold'
+        if index == 'Silver':
+            operateCreditlotsum(uid, 1)
+        if index == 'Gold':
+            operateCreditlotSsum(uid, 1)
         return index
     else:
         return 0
 
 
 def creditLotteryDuo(uid: int, count: int):
-    global flag
-    flag = 0
+    num = getCredit(uid)
+    if num is None:
+        num = [0]
+    if count * 10 > num[0]:  # 确认积分是否足够
+        return []
     retsum = []
     for i in range(count):
         ret = creditLottery(uid)
-        if ret == "Silver":
-            flag = 1
-        if (i + 1) % 10 == 0 and flag == 0:
-            ret = "Silver"
+        if ret == 0:
+            return retsum
         retsum.append(ret)
-    flag = 0
     return retsum

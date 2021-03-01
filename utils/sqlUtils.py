@@ -55,6 +55,8 @@ class credit(Base):
     __tablename__ = "credit"
     uid = Column(Integer, primary_key=True, index=True)
     creditsum = Column(Integer)
+    lotterysum = Column(Integer, default=0)  # 小保底计数
+    lotterySsum = Column(Integer, default=0)  # 大保底计数
 
 
 # 积分记录表

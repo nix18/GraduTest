@@ -171,7 +171,10 @@ async def credit_lottery(uid: int, token: str):
     cuid = veriToken.verificationToken(uid, token)
     try:
         if cuid != -1:
-            return {"Uid": cuid, "Index": credit.creditLotteryDuo(cuid, 10)}
+            result = credit.creditLotteryDuo(cuid, 10)
+            if len(result) == 0:
+                return {"Error": "积分抽奖失败，积分不足"}
+            return {"Uid": cuid, "Index": result}
         else:
             return {"Error": "积分抽奖失败，凭据失效"}
     except:
