@@ -61,6 +61,7 @@ async def register(uname: str, uprofile: str, upwd: str):
             return {"Msg": "注册成功"}
     except:
         traceback.print_exc()
+        sql.session.rollback()
         return {"Error": "注册失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
@@ -91,6 +92,7 @@ async def login(uname: str, upwd: str):
             return {"Error": "登录失败"}
     except:
         traceback.print_exc()
+        sql.session.rollback()
         return {"Error": "登录失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
@@ -131,6 +133,7 @@ async def qiandao(uname: str, token: str):
         return {"Error": "签到失败，凭据出错"}
     except:
         traceback.print_exc()
+        sql.session.rollback()
         return {"Error": "签到失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
@@ -149,6 +152,7 @@ async def invalidate_token(uid: int, token: str):
         return {"Msg": "登出失败，凭据失效"}
     except:
         traceback.print_exc()
+        sql.session.rollback()
         return {"Msg": "登出失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
@@ -197,6 +201,7 @@ async def add_habit(uid: int, token: str, hname: str, hcontent: str, hcategory: 
             return {"Error": "习惯添加失败，凭据失效"}
     except:
         traceback.print_exc()
+        sql.session.rollback()
         return {"Error": "习惯添加失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
@@ -256,6 +261,7 @@ async def mod_habit(uid: int, token: str, hid: int, hname: str = None, hcontent:
         return {"Error": "修改失败，凭据失效"}
     except:
         traceback.print_exc()
+        sql.session.rollback()
         return {"Error": "修改失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
@@ -272,6 +278,7 @@ async def del_habit(uid: int, token: str, hid: int):
         return {"Error": "删除失败，凭据失效"}
     except:
         traceback.print_exc()
+        sql.session.rollback()
         return {"Error": "删除失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
