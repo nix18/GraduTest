@@ -32,7 +32,7 @@ async def query(uid: int, token: str):
     if veriToken.verification_token(uid, token) != -1:
         pass
     else:
-        return {"Error": "登陆错误，凭据失效"}
+        return {"code": -1, "Msg": "登陆错误，凭据失效"}
     qd_list = []
     qd = sql.session.query(sql.clock_in).all()
     sql.session.close()
@@ -53,17 +53,17 @@ async def register(uname: str, uprofile: str, upwd: str):
     try:
         isnameexist = sql.session.query(sql.user.user_name).filter(sql.user.user_name == uname).first() is not None
         if isnameexist:
-            return {"Error": "名称已存在"}
+            return {"code": -1, "Msg": "名称已存在"}
         else:
             # 密码加密处理在客户端
             new_user = sql.user(user_name=uname, user_profile=uprofile, user_pwd=upwd)
             sql.session.add(new_user)
             sql.session.commit()
-            return {"Msg": "注册成功"}
+            return {"code": 0, "Msg": "注册成功"}
     except:
         traceback.print_exc()
         sql.session.rollback()
-        return {"Error": "注册失败，服务器内部错误" + " 请联系: " + adminMail}
+        return {"code": -1, "Msg": "注册失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 # 登录
@@ -73,7 +73,7 @@ async def log_in(uname: str, upwd: str):
         cuser = sql.session.query(sql.user).filter(sql.user.user_name == uname).first()
         # 判空
         if cuser is None:
-            return {"Error": "登录失败"}
+            return {"code": -1, "Msg": "登录失败"}
         cpwd = cuser.user_pwd
         cuid = cuser.uid
         if upwd == cpwd:  # 验证账号密码
@@ -88,13 +88,13 @@ async def log_in(uname: str, upwd: str):
                 sql.session.query(sql.token_list).filter(sql.token_list.uid == cuid) \
                     .update({"token": token, "expire_time": timenext})
             sql.session.commit()
-            return {"Uid": cuid, "Token": token}
+            return {"code": 0, "uid": cuid, "user_name": uname, "user_profile": cuser.user_profile, "user_token": token}
         else:
-            return {"Error": "登录失败"}
+            return {"code": -1, "Msg": "登录失败"}
     except:
         traceback.print_exc()
         sql.session.rollback()
-        return {"Error": "登录失败，服务器内部错误" + " 请联系: " + adminMail}
+        return {"code": -1, "Msg": "登录失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 # TODO 达到积分完成习惯
@@ -109,7 +109,7 @@ async def clock_in(uname: str, token: str):
             if sql.session.query(sql.clock_in).filter(
                     sql.clock_in.uid == cuid,
                     func.to_days(sql.clock_in.last_qd_time) == func.to_days(func.now())).first() is not None:
-                return {"Error": "签到失败，你今天已经签到过了"}
+                return {"code": -1, "Msg": "签到失败，你今天已经签到过了"}
             lqobj = sql.session.query(sql.clock_in).filter(sql.clock_in.uid == cuid).first()
             if lqobj is None:
                 lqcount = 1
@@ -128,14 +128,14 @@ async def clock_in(uname: str, token: str):
                     {sql.clock_in.last_qd_time: datetime.datetime.now(), sql.clock_in.lq_count: lqcount})
             if credit.credit_add(cuid, 10 * lqcount, "每日签到") == 1:  # 连签积分加成
                 sql.session.commit()
-                return {"Msg": "签到成功，积分+" + str(10 * lqcount)}
+                return {"code": 0, "Msg": "签到成功，积分+" + str(10 * lqcount)}
             else:
                 raise Exception
-        return {"Error": "签到失败，凭据出错"}
+        return {"code": -1, "Msg": "签到失败，凭据出错"}
     except:
         traceback.print_exc()
         sql.session.rollback()
-        return {"Error": "签到失败，服务器内部错误" + " 请联系: " + adminMail}
+        return {"code": -1, "Msg": "签到失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 @app.post("/invalidateToken")
@@ -147,14 +147,14 @@ async def invalidate_token(uid: int, token: str):
             rtn = sql.session.query(sql.token_list).filter(sql.token_list.uid == cuid).delete()
             sql.session.commit()
             if rtn == 1:
-                return {"Msg": "登出成功"}
+                return {"code": 0, "Msg": "登出成功"}
             else:
                 raise Exception
-        return {"Msg": "登出失败，凭据失效"}
+        return {"code": -1, "Msg": "登出失败，凭据失效"}
     except:
         traceback.print_exc()
         sql.session.rollback()
-        return {"Msg": "登出失败，服务器内部错误" + " 请联系: " + adminMail}
+        return {"code": -1, "Msg": "登出失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 # 获取积分总数目
@@ -163,12 +163,12 @@ async def get_credit(uid: int, token: str):
     cuid = veriToken.verification_token(uid, token)
     try:
         if cuid != -1:
-            return {"Uid": cuid, "CreditSum": credit.get_credit(cuid)[0]}
+            return {"code": 0, "Uid": cuid, "CreditSum": credit.get_credit(cuid)[0]}
         else:
-            return {"Error": "查询积分失败，凭据失效"}
+            return {"code": -1, "Msg": "查询积分失败，凭据失效"}
     except:
         traceback.print_exc()
-        return {"Error": "查询积分失败，服务器内部错误" + " 请联系: " + adminMail}
+        return {"code": -1, "Msg": "查询积分失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 @app.post("/creditLottery")
@@ -178,13 +178,13 @@ async def credit_lottery(uid: int, token: str):
         if cuid != -1:
             result = credit.credit_lottery_duo(cuid, 10)
             if len(result) == 0:
-                return {"Error": "积分抽奖失败，积分不足"}
-            return {"Uid": cuid, "Index": result}
+                return {"code": -1, "Msg": "积分抽奖失败，积分不足"}
+            return {"code": 0, "Uid": cuid, "Index": result}
         else:
-            return {"Error": "积分抽奖失败，凭据失效"}
+            return {"code": -1, "Msg": "积分抽奖失败，凭据失效"}
     except:
         traceback.print_exc()
-        return {"Error": "积分抽奖失败，服务器内部错误" + " 请联系: " + adminMail}
+        return {"code": -1, "Msg": "积分抽奖失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 # 添加好习惯
@@ -197,13 +197,13 @@ async def add_habit(uid: int, token: str, hname: str, hcontent: str, hcategory: 
                                         habit_category=hcategory, habit_create_time=datetime.datetime.now())
             sql.session.add(new_habit)
             sql.session.commit()
-            return {"Msg": "习惯添加成功"}
+            return {"code": 0, "Msg": "习惯添加成功"}
         else:
-            return {"Error": "习惯添加失败，凭据失效"}
+            return {"code": -1, "Msg": "习惯添加失败，凭据失效"}
     except:
         traceback.print_exc()
         sql.session.rollback()
-        return {"Error": "习惯添加失败，服务器内部错误" + " 请联系: " + adminMail}
+        return {"code": -1, "Msg": "习惯添加失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 # 查询好习惯 f'{hname}'为格式化字符串，注意引号
@@ -226,7 +226,7 @@ async def sel_habits(hname: str = None, hcategory: str = None):
         return habits
     except:
         traceback.print_exc()
-        return {"Error": "查询习惯失败，服务器内部错误" + " 请联系: " + adminMail}
+        return {"code": -1, "Msg": "查询习惯失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 @app.get("/selmyhabits")
@@ -235,10 +235,10 @@ async def sel_my_habits(uid: int, token: str):
     try:
         if cuid != -1:
             return sql.session.query(sql.good_habits).filter(sql.good_habits.create_uid == cuid).all()
-        return {"Error": "查询自定义习惯失败，凭据失效"}
+        return {"code": -1, "Msg": "查询自定义习惯失败，凭据失效"}
     except:
         traceback.print_exc()
-        return {"Error": "查询自定义习惯失败，服务器内部错误" + " 请联系: " + adminMail}
+        return {"code": -1, "Msg": "查询自定义习惯失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 @app.post("/modhabit")
@@ -259,13 +259,13 @@ async def mod_habit(uid: int, token: str, hid: int, hname: str = None, hcontent:
                     sql.session.query(sql.good_habits).filter(sql.good_habits.hid == hid) \
                         .update({sql.good_habits.habit_category: hcategory})
                     sql.session.commit()
-                return {"Msg": "修改成功"}
-            return {"Error": "修改失败，无权操作他人的习惯"}
-        return {"Error": "修改失败，凭据失效"}
+                return {"code": 0, "Msg": "修改成功"}
+            return {"code": -1, "Msg": "修改失败，无权操作他人的习惯"}
+        return {"code": -1, "Msg": "修改失败，凭据失效"}
     except:
         traceback.print_exc()
         sql.session.rollback()
-        return {"Error": "修改失败，服务器内部错误" + " 请联系: " + adminMail}
+        return {"code": -1, "Msg": "修改失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 @app.post("/delhabit")
@@ -276,13 +276,13 @@ async def del_habit(uid: int, token: str, hid: int):
             if tuple([hid]) in sql.session.query(sql.good_habits.hid).filter(sql.good_habits.create_uid == cuid).all():
                 sql.session.query(sql.good_habits).filter(sql.good_habits.hid == hid).delete()
                 sql.session.commit()
-                return {"Msg": "删除成功"}
-            return {"Error": "删除失败，无权操作他人的习惯"}
-        return {"Error": "删除失败，凭据失效"}
+                return {"code": 0, "Msg": "删除成功"}
+            return {"code": -1, "Msg": "删除失败，无权操作他人的习惯"}
+        return {"code": -1, "Msg": "删除失败，凭据失效"}
     except:
         traceback.print_exc()
         sql.session.rollback()
-        return {"Error": "删除失败，服务器内部错误" + " 请联系: " + adminMail}
+        return {"code": -1, "Msg": "删除失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 # TODO 好习惯top10生成 根据热度habit_heat每小时1次更新
@@ -293,7 +293,7 @@ class gen_habit_plaza(Thread):
 
     def run(self):
         while True:
-            print("已更新习惯广场 " + str(datetime.datetime.now()))
+            # print("已更新习惯广场 " + str(datetime.datetime.now()))
             time.sleep(10)
 
 
