@@ -97,6 +97,29 @@ async def log_in(uname: str, upwd: str):
         return {"code": -1, "Msg": "登录失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+@app.post("/updateUser")
+async def update_user(uid: int, token: str, uprofile: str = None, upwd: str = None):
+    cuid = veriToken.verification_token(uid, token)
+    try:
+        if cuid != -1:
+            if uprofile is not None:
+                if len(uprofile) != 0:
+                    sql.session.commit()
+                    sql.session.query(sql.user).filter(sql.user.uid == uid).update({sql.user.user_profile: uprofile})
+                    sql.session.commit()
+            if upwd is not None:
+                if len(upwd) != 0:
+                    sql.session.commit()
+                    sql.session.query(sql.user).filter(sql.user.uid == uid).update({sql.user.user_pwd: upwd})
+                    sql.session.commit()
+            return {"code": 0, "Msg": "用户信息修改成功"}
+        return {"code": -1, "Msg": "用户信息修改失败，凭据无效"}
+    except:
+        traceback.print_exc()
+        sql.session.rollback()
+        return {"code": -1, "Msg": "用户信息修改失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
 # TODO 达到积分完成习惯
 # 签到
 @app.post("/qiandao")
@@ -136,6 +159,15 @@ async def clock_in(uname: str, token: str):
         traceback.print_exc()
         sql.session.rollback()
         return {"code": -1, "Msg": "签到失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
+@app.post("/chkToken")
+async def chk_token(uid: int, token: str):
+    cuid = veriToken.verification_token(uid, token)
+    if cuid == uid:
+        return {"code": 0, "Msg": "Token有效"}
+    else:
+        return {"code": -1, "Msg": "Token无效"}
 
 
 @app.post("/invalidateToken")
@@ -305,4 +337,4 @@ async def habit_plaza():
 
 if __name__ == '__main__':
     gen_habit_plaza().start()  # 启动更新习惯广场线程
-    uvicorn.run(app='main:app', host="127.0.0.1", port=8000, reload=True, debug=True)
+    uvicorn.run(app='main:app', host="0.0.0.0", port=8000, reload=True, debug=True)
