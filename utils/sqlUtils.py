@@ -1,5 +1,5 @@
 # sqlalchemy配置
-from sqlalchemy import Boolean, Column, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -26,7 +26,7 @@ class user(Base):
 # 用户签到表
 class clock_in(Base):
     __tablename__ = "clock_in"
-    uid = Column(Integer, primary_key=True, index=True)
+    uid = Column(Integer, ForeignKey(user.uid), primary_key=True, index=True)
     last_qd_time = Column(DateTime)  # 最后签到时间
     lq_count = Column(Integer)  # 连签天数
 
@@ -34,7 +34,7 @@ class clock_in(Base):
 # 用户Token存储表
 class token_list(Base):
     __tablename__ = "token_list"
-    uid = Column(Integer, primary_key=True, index=True)
+    uid = Column(Integer, ForeignKey(user.uid), primary_key=True, index=True)
     token = Column(String(40))
     expire_time = Column(DateTime)
 
@@ -43,7 +43,7 @@ class token_list(Base):
 class good_habits(Base):
     __tablename__ = "good_habits"
     hid = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    create_uid = Column(Integer)
+    create_uid = Column(Integer, ForeignKey(user.uid))
     habit_name = Column(String(500))
     habit_content = Column(String(5000))
     habit_category = Column(String(500), default="其他")
@@ -54,7 +54,7 @@ class good_habits(Base):
 # 积分表
 class credit(Base):
     __tablename__ = "credit"
-    uid = Column(Integer, primary_key=True, index=True)
+    uid = Column(Integer, ForeignKey(user.uid), primary_key=True, index=True)
     credit_sum = Column(Integer)
     lottery_sum = Column(Integer, default=0)  # 小保底计数
     lottery_Ssum = Column(Integer, default=0)  # 大保底计数
@@ -64,7 +64,7 @@ class credit(Base):
 class credit_detail(Base):
     __tablename__ = "credit_detail"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    uid = Column(Integer, index=True)
+    uid = Column(Integer, ForeignKey(user.uid), index=True)
     credit_num = Column(Integer)  # 积分数额
     credit_desc = Column(String(500))  # 积分描述
     credit_time = Column(DateTime)  # 记录时间
