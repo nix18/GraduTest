@@ -1,6 +1,3 @@
-import time
-from threading import Thread
-
 import uvicorn
 from fastapi import FastAPI
 import datetime
@@ -13,6 +10,8 @@ import utils.veriToken as veriToken
 import hashlib
 import traceback
 import os
+
+from utils.gen_habit_plaza import gen_habit_plaza
 
 app = FastAPI()
 
@@ -317,16 +316,21 @@ async def del_habit(uid: int, token: str, hid: int):
         return {"code": -1, "Msg": "删除失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
-# TODO 好习惯top10生成 根据热度habit_heat每小时1次更新
-class gen_habit_plaza(Thread):
-    def __init__(self):
-        super().__init__()
-        print("习惯广场线程已初始化")
-
-    def run(self):
-        while True:
-            # print("已更新习惯广场 " + str(datetime.datetime.now()))
-            time.sleep(10)
+@app.post("/buyhabit")
+async def buy_habit(uid: int, token: str, hid: int, user_config: str):
+    cuid = veriToken.verification_token(uid, token)
+    try:
+        if cuid != -1:
+            rh = sql.running_habits(hid=hid, uid=uid, user_config=user_config,
+                                    running_start_time=datetime.datetime.now())
+            sql.session.add(rh)
+            sql.session.commit()
+            return {"code": 0, "Msg": "购买习惯成功"}
+        return {"code": -1, "Msg": "购买习惯失败，用户不存在"}
+    except:
+        traceback.print_exc()
+        sql.session.rollback()
+        return {"code": -1, "Msg": "购买习惯失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 # TODO 好习惯广场 top10习惯+自己的习惯

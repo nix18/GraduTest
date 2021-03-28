@@ -51,6 +51,16 @@ class good_habits(Base):
     habit_create_time = Column(DateTime)
 
 
+# 进行中的好习惯
+class running_habits(Base):
+    __tablename__ = "running_habits"
+    rhid = Column(Integer, primary_key=True, autoincrement=True)
+    hid = Column(Integer, ForeignKey(good_habits.hid))
+    uid = Column(Integer, ForeignKey(user.uid), index=True)
+    user_config = Column(String(5000))
+    running_start_time = Column(DateTime)
+
+
 # 积分表
 class credit(Base):
     __tablename__ = "credit"
