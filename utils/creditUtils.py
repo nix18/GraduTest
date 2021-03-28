@@ -12,18 +12,19 @@ def credit_add(uid: int, creditnum: int, creditdesc: str):
         credit_detail(uid, creditnum, creditdesc, datetime.datetime.now())
         sql.session.commit()
         if ret == 1:
-            return 1
+            return 0
         else:
             isexist = sql.session.query(sql.credit).filter(sql.credit.uid == uid).first()
             if isexist is None:
                 new_credit = sql.credit(uid=uid, credit_sum=creditnum)
                 sql.session.add(new_credit)
                 sql.session.commit()
-                return 1
-            return 0
+                return 0
+            return -1
     except:
         traceback.print_exc()
         sql.session.rollback()
+        return -1
 
 
 def credit_consume(uid: int, creditnum: int, creditdesc: str):
@@ -32,7 +33,7 @@ def credit_consume(uid: int, creditnum: int, creditdesc: str):
         credit_add(uid, 0, "积分初始化")
         num = [0]
     if creditnum > num[0]:
-        return 0
+        return -1
     return credit_add(uid, -creditnum, creditdesc)
 
 
@@ -43,10 +44,11 @@ def credit_detail(uid: int, creditnum: int, creditdesc: str, ctime: datetime.dat
             uid=uid, credit_num=creditnum, credit_desc=creditdesc, credit_time=ctime)
         sql.session.add(new_credit_detail)
         sql.session.commit()
-        return 1
+        return 0
     except:
         traceback.print_exc()
         sql.session.rollback()
+        return -1
 
 
 def get_credit(uid: int):
@@ -56,6 +58,7 @@ def get_credit(uid: int):
     except:
         traceback.print_exc()
         sql.session.rollback()
+        return -1
 
 
 def operate_credit_lottery_sum(uid: int, type: int):
@@ -134,8 +137,8 @@ def credit_lottery(uid: int):
     # 消耗积分，记录结果
     ret2 = credit_consume(uid, 10, "积分抽奖，结果：" + index)
     # 若上两步任一步不成功，返回错误
-    if ret1 + ret2 != 2:
-        return 0
+    if ret1 + ret2 != 1:
+        return -1
     # 若保底，重置保底次数
     if index == 'Silver':
         operate_credit_lottery_sum(uid, 1)
@@ -155,7 +158,7 @@ def credit_lottery_duo(uid: int, count: int):
     ret_sum = []
     for i in range(count):
         ret = credit_lottery(uid)
-        if ret == 0:
+        if ret == -1:
             return ret_sum
         ret_sum.append(ret)
     return ret_sum

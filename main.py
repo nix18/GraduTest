@@ -317,10 +317,14 @@ async def del_habit(uid: int, token: str, hid: int):
 
 
 @app.post("/buyhabit")
-async def buy_habit(uid: int, token: str, hid: int, user_config: str):
+async def buy_habit(uid: int, token: str, hid: int, user_config: str, capital: int):
     cuid = veriToken.verification_token(uid, token)
     try:
         if cuid != -1:
+            habit_to_buy = sql.session.query(sql.good_habits).filter(sql.good_habits.hid == hid).first()
+            ret = credit.credit_consume(uid, capital, "购买习惯：" + habit_to_buy.habit_name)
+            if ret == -1:
+                return {"code": -1, "Msg": "购买习惯失败，积分余额不足"}
             rh = sql.running_habits(hid=hid, uid=uid, user_config=user_config,
                                     running_start_time=datetime.datetime.now())
             sql.session.add(rh)
@@ -331,6 +335,27 @@ async def buy_habit(uid: int, token: str, hid: int, user_config: str):
         traceback.print_exc()
         sql.session.rollback()
         return {"code": -1, "Msg": "购买习惯失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
+# TODO 习惯签到返还积分
+
+@app.post("/giveuphabit")
+async def give_up_habit(uid: int, token: str, rhid: int):
+    cuid = veriToken.verification_token(uid, token)
+    try:
+        if cuid != -1:
+            ret = sql.session.query(sql.running_habits).filter(
+                sql.running_habits.uid == uid, sql.running_habits.rhid == rhid).delete()
+            sql.session.commit()
+            if ret != 0:
+                return {"code": 0, "Msg": "放弃习惯成功"}
+            else:
+                return {"code": -1, "Msg": "放弃习惯失败，输入信息有误"}
+        return {"code": -1, "Msg": "放弃习惯失败，用户不存在"}
+    except:
+        traceback.print_exc()
+        sql.session.rollback()
+        return {"code": -1, "Msg": "放弃习惯失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 # TODO 好习惯广场 top10习惯+自己的习惯
