@@ -148,7 +148,7 @@ async def clock_in(uname: str, token: str):
                     lqcount = 1
                 sql.session.query(sql.clock_in).filter(sql.clock_in.uid == cuid).update(
                     {sql.clock_in.last_qd_time: datetime.datetime.now(), sql.clock_in.lq_count: lqcount})
-            if credit.credit_add(cuid, 10 * lqcount, "每日签到") == 1:  # 连签积分加成
+            if credit.credit_add(cuid, 10 * lqcount, "每日签到") == 0:  # 连签积分加成
                 sql.session.commit()
                 return {"code": 0, "Msg": "签到成功，积分+" + str(10 * lqcount)}
             else:
@@ -317,8 +317,10 @@ async def del_habit(uid: int, token: str, hid: int):
 
 
 @app.post("/buyhabit")
-async def buy_habit(uid: int, token: str, hid: int, user_config: str, capital: int):
+async def buy_habit(uid: int, token: str, hid: int, user_config: str, target_days: int, capital: int):
     cuid = veriToken.verification_token(uid, token)
+    multiple = credit.cal_multiple(target_days, capital)
+    bonus = capital * multiple
     try:
         if cuid != -1:
             habit_to_buy = sql.session.query(sql.good_habits).filter(sql.good_habits.hid == hid).first()
@@ -326,10 +328,11 @@ async def buy_habit(uid: int, token: str, hid: int, user_config: str, capital: i
             if ret == -1:
                 return {"code": -1, "Msg": "购买习惯失败，积分余额不足"}
             rh = sql.running_habits(hid=hid, uid=uid, user_config=user_config,
+                                    bonus=bonus, target_days=target_days,
                                     running_start_time=datetime.datetime.now())
             sql.session.add(rh)
             sql.session.commit()
-            return {"code": 0, "Msg": "购买习惯成功"}
+            return {"code": 0, "Msg": "购买习惯成功，返还积分 " + str(bonus)}
         return {"code": -1, "Msg": "购买习惯失败，用户不存在"}
     except:
         traceback.print_exc()
@@ -338,6 +341,10 @@ async def buy_habit(uid: int, token: str, hid: int, user_config: str, capital: i
 
 
 # TODO 习惯签到返还积分
+@app.post("/habitclockin")
+async def habit_clock_in():
+    return
+
 
 @app.post("/giveuphabit")
 async def give_up_habit(uid: int, token: str, rhid: int):

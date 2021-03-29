@@ -105,6 +105,19 @@ def operate_credit_lottery_Ssum(uid: int, type: int):
         sql.session.rollback()
 
 
+# 计算返还积分倍率
+def cal_multiple(target_days: int, capital: int):
+    if capital < 100 or target_days < 7:
+        multiple = 1.5
+    elif capital < 300 or target_days < 14:
+        multiple = 2
+    elif capital < 600 or target_days < 21:
+        multiple = 2.5
+    else:
+        multiple = 3
+    return multiple
+
+
 def weighted_random(items):
     global x
     total = sum(w for _, w in items)

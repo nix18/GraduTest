@@ -58,6 +58,9 @@ class running_habits(Base):
     hid = Column(Integer, ForeignKey(good_habits.hid))
     uid = Column(Integer, ForeignKey(user.uid), index=True)
     user_config = Column(String(5000))
+    bonus = Column(Integer)
+    persist_days = Column(Integer, default=0)
+    target_days = Column(Integer)
     running_start_time = Column(DateTime)
 
 
