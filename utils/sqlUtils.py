@@ -66,6 +66,15 @@ class running_habits(Base):
     last_qd_time = Column(DateTime, default=datetime.datetime(1970, 1, 1, 0, 0))
     running_start_time = Column(DateTime)
 
+class habit_plaza(Base):
+    __tablename__ = "habit_plaza"
+    hid = Column(Integer, primary_key=True, index=True)
+    create_uid = Column(Integer, ForeignKey(user.uid))
+    habit_name = Column(String(500))
+    habit_content = Column(String(5000))
+    habit_category = Column(String(500))
+    habit_heat = Column(Integer)
+    habit_create_time = Column(DateTime)
 
 # 积分表
 class credit(Base):

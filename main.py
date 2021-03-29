@@ -256,7 +256,7 @@ async def sel_habits(hname: str = None, hcategory: str = None):
                 habits = sql.session.query(sql.good_habits).filter(
                     sql.good_habits.habit_name.like(f'%{hname}%'),
                     sql.good_habits.habit_category.like(f'%{hcategory}%')).all()
-        return habits
+        return {"code": 0, "result": habits}
     except:
         traceback.print_exc()
         return {"code": -1, "Msg": "查询习惯失败，服务器内部错误" + " 请联系: " + adminMail}
@@ -267,7 +267,8 @@ async def sel_my_habits(uid: int, token: str):
     cuid = veriToken.verification_token(uid, token)
     try:
         if cuid != -1:
-            return sql.session.query(sql.good_habits).filter(sql.good_habits.create_uid == cuid).all()
+            return {"code": 0, "result": sql.session.query(sql.good_habits).filter(
+                sql.good_habits.create_uid == cuid).all()}
         return {"code": -1, "Msg": "查询自定义习惯失败，凭据失效"}
     except:
         traceback.print_exc()
@@ -332,6 +333,8 @@ async def buy_habit(uid: int, token: str, hid: int, user_config: str, target_day
             rh = sql.running_habits(hid=hid, uid=uid, user_config=user_config,
                                     bonus=bonus, target_days=target_days,
                                     running_start_time=datetime.datetime.now())
+            sql.session.query(sql.good_habits).filter(sql.good_habits.hid == hid).update(
+                {sql.good_habits.habit_heat: sql.good_habits.habit_heat + 1})
             sql.session.add(rh)
             sql.session.commit()
             return {"code": 0, "Msg": "购买习惯成功，返还积分 " + str(bonus)}
@@ -414,7 +417,11 @@ async def give_up_habit(uid: int, token: str, rhid: int):
 # TODO 好习惯广场 top10习惯+自己的习惯
 @app.get("/habitplaza")
 async def habit_plaza():
-    return
+    try:
+        top10 = sql.session.query(sql.habit_plaza).all()
+        return {"code": 0, "result": top10}
+    except:
+        return {"code": -1, "Msg": "查询习惯广场失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 if __name__ == '__main__':

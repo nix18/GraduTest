@@ -107,7 +107,9 @@ def operate_credit_lottery_Ssum(uid: int, type: int):
 
 # 计算返还积分倍率
 def cal_multiple(target_days: int, capital: int):
-    if capital < 100 or target_days < 7:
+    if target_days < 2:
+        multiple = 1
+    elif capital < 100 or target_days < 7:
         multiple = 1.5
     elif capital < 300 or target_days < 14:
         multiple = 2
