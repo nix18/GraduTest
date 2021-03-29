@@ -1,4 +1,6 @@
 # sqlalchemy配置
+import datetime
+
 from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -61,6 +63,7 @@ class running_habits(Base):
     bonus = Column(Integer)
     persist_days = Column(Integer, default=0)
     target_days = Column(Integer)
+    last_qd_time = Column(DateTime, default=datetime.datetime(1970, 1, 1, 0, 0))
     running_start_time = Column(DateTime)
 
 

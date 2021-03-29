@@ -1,3 +1,5 @@
+from random import random
+
 import uvicorn
 from fastapi import FastAPI
 import datetime
@@ -342,8 +344,52 @@ async def buy_habit(uid: int, token: str, hid: int, user_config: str, target_day
 
 # TODO 习惯签到返还积分
 @app.post("/habitclockin")
-async def habit_clock_in():
-    return
+async def habit_clock_in(uid: int, token: str, rhid: int):
+    cuid = veriToken.verification_token(uid, token)
+    try:
+        if cuid != -1:
+            sql.session.commit()
+            habit_to_clock_in = sql.session.query(sql.running_habits).filter(sql.running_habits.rhid == rhid).first()
+            # 检查是否为本人习惯 sql=1
+            if habit_to_clock_in.uid != cuid:
+                return {"code": -1, "Msg": "习惯打卡失败，不可以为他人习惯打卡"}
+            # 检查是否达标 sql=1
+            if habit_to_clock_in.persist_days == habit_to_clock_in.target_days:
+                return {"code": -1, "Msg": "习惯打卡失败，已打卡到目标天数"}
+            # 检查是否已打卡过 sql=2
+            if sql.session.query(sql.running_habits).filter(
+                    sql.running_habits.rhid == rhid,
+                    func.to_days(sql.running_habits.last_qd_time) == func.to_days(func.now())).first() is not None:
+                return {"code": -1, "Msg": "习惯打卡失败，你今天已经打卡过了"}
+            # 最后一天打卡 sql=3
+            if habit_to_clock_in.persist_days + 1 == habit_to_clock_in.target_days:
+                temp_bonus = habit_to_clock_in.bonus
+                sql.session.query(sql.running_habits).filter(sql.running_habits.rhid == rhid).update(
+                    {sql.running_habits.persist_days: sql.running_habits.persist_days + 1,
+                     sql.running_habits.last_qd_time: datetime.datetime.now(),
+                     sql.running_habits.bonus: 0})  # 此处操作对habit_to_clock_in生效
+                credit.credit_add(cuid, temp_bonus, "习惯打卡返还")
+                sql.session.commit()
+                return {"code": 0,
+                        "Msg": "习惯打卡成功，当前打卡第" + str(habit_to_clock_in.persist_days) +
+                               "天，返还积分" + str(temp_bonus)}
+            # 正常打卡 sql=3
+            bonus = int(habit_to_clock_in.bonus / (habit_to_clock_in.target_days - habit_to_clock_in.persist_days)
+                        - int(random() * 10))
+            bonus = 1 if bonus == 0 else bonus  # 判断返还积分是否为0
+            sql.session.query(sql.running_habits).filter(sql.running_habits.rhid == rhid).update(
+                {sql.running_habits.persist_days: sql.running_habits.persist_days + 1,
+                 sql.running_habits.last_qd_time: datetime.datetime.now(),
+                 sql.running_habits.bonus: sql.running_habits.bonus - bonus})  # 此处操作对habit_to_clock_in生效
+            credit.credit_add(cuid, bonus, "习惯打卡返还")
+            sql.session.commit()
+            return {"code": 0,
+                    "Msg": "习惯打卡成功，当前打卡第" + str(habit_to_clock_in.persist_days) + "天，返还积分" + str(bonus)}
+        return {"code": -1, "Msg": "习惯打卡失败，输入信息有误"}
+    except:
+        traceback.print_exc()
+        sql.session.rollback()
+        return {"code": -1, "Msg": "习惯打卡失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 @app.post("/giveuphabit")
