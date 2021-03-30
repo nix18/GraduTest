@@ -1,3 +1,4 @@
+from multiprocessing import Pool
 from random import random
 
 import uvicorn
@@ -13,7 +14,8 @@ import hashlib
 import traceback
 import os
 
-from utils.gen_habit_plaza import gen_habit_plaza
+import utils.gen_habit_plaza
+from utils import gen_habit_plaza
 
 app = FastAPI()
 
@@ -425,5 +427,9 @@ async def habit_plaza():
 
 
 if __name__ == '__main__':
-    gen_habit_plaza().start()  # 启动更新习惯广场线程
+    pool = Pool(processes=1)
+    pool.apply_async(gen_habit_plaza.gen, args=())
+    print("主进程 [%s]" % os.getpid())
     uvicorn.run(app='main:app', host="0.0.0.0", port=8000, reload=True, debug=True)
+    pool.close()
+    pool.join()
