@@ -126,10 +126,10 @@ async def update_user(uid: int, token: str, uprofile: str = None, upwd: str = No
 # TODO 达到积分完成习惯
 # 签到
 @app.post("/qiandao")
-async def clock_in(uname: str, token: str):
+async def clock_in(uid: int, token: str):
     global lqcount
     try:
-        cuid = veriToken.verification_token(uname, token)
+        cuid = veriToken.verification_token(uid, token)
         if cuid != -1:
             sql.session.commit()  # 清除查询缓存
             if sql.session.query(sql.clock_in).filter(
@@ -417,9 +417,10 @@ async def give_up_habit(uid: int, token: str, rhid: int):
 
 
 # TODO 好习惯广场 top10习惯+自己的习惯
-@app.get("/habitplaza")
+@app.post("/habitplaza")
 async def habit_plaza():
     try:
+        sql.session.commit()
         top10 = sql.session.query(sql.habit_plaza).all()
         return {"code": 0, "result": top10}
     except:
@@ -428,7 +429,7 @@ async def habit_plaza():
 
 if __name__ == '__main__':
     pool = Pool(processes=1)
-    pool.apply_async(gen_habit_plaza.gen, args=())
+    pool.apply_async(gen_habit_plaza.gen, args=(10, False))
     print("主进程 [%s]" % os.getpid())
     uvicorn.run(app='main:app', host="0.0.0.0", port=8000, reload=True, debug=True)
     pool.close()
