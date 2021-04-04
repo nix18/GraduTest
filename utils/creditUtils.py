@@ -54,11 +54,19 @@ def credit_detail(uid: int, creditnum: int, creditdesc: str, ctime: datetime.dat
 def get_credit(uid: int):
     try:
         sql.session.commit()
-        return sql.session.query(sql.credit.credit_sum).filter(sql.credit.uid == uid).first()
+        result = sql.session.query(sql.credit.credit_sum).filter(sql.credit.uid == uid).first()
+        if result[0] is None:
+            raise Exception
+        return result
     except:
-        traceback.print_exc()
-        sql.session.rollback()
-        return -1
+        try:
+            credit_add(uid, 0, "积分账户初始化")
+            sql.session.commit()
+            return sql.session.query(sql.credit.credit_sum).filter(sql.credit.uid == uid).first()
+        except:
+            traceback.print_exc()
+            sql.session.rollback()
+    return -1
 
 
 def operate_credit_lottery_sum(uid: int, type: int):

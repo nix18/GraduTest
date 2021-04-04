@@ -416,7 +416,7 @@ async def give_up_habit(uid: int, token: str, rhid: int):
         return {"code": -1, "Msg": "放弃习惯失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
-# TODO 好习惯广场 top10习惯+自己的习惯
+# TODO 好习惯广场 top10习惯
 @app.post("/habitplaza")
 async def habit_plaza():
     try:
