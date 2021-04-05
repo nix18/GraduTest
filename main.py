@@ -73,6 +73,7 @@ async def register(uname: str, uprofile: str, upwd: str):
 @app.post("/login")
 async def log_in(uname: str, upwd: str):
     try:
+        sql.session.commit()
         cuser = sql.session.query(sql.user).filter(sql.user.user_name == uname).first()
         # 判空
         if cuser is None:
