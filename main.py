@@ -418,7 +418,7 @@ async def give_up_habit(uid: int, token: str, rhid: int):
 
 
 # TODO 好习惯广场 top10习惯
-@app.post("/habitplaza")
+@app.get("/habitplaza")
 async def habit_plaza():
     try:
         sql.session.commit()
