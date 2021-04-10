@@ -26,12 +26,13 @@ adminMail = "admin@admin.com"
 # TODO 使用状态码 code 返回程序执行状态
 @app.get("/")
 async def read_root():
-    return {"Hello": "Test"}
+    return {"这里是": "好习惯养成系统"}
 
 
-# 查询
-@app.get("/query")
-async def query(uid: int, token: str):
+# 注册管理员
+# 管理员只能有一个
+@app.get("/registerForAdmin")
+async def register_for_admin(uid: int, token: str):
     if veriToken.verification_token(uid, token) != -1:
         pass
     else:
@@ -48,6 +49,11 @@ async def query(uid: int, token: str):
             }
         )
     return qd_list
+
+
+# TODO 管理员登录 管理员审核好习惯
+
+# TODO 用户行为评估得出好习惯分数->用户等级
 
 
 # 注册

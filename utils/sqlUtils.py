@@ -16,6 +16,15 @@ session = SessionLocal()
 Base = declarative_base()
 
 
+# 管理员表
+class admin(Base):
+    __tablename__ = "admin"
+    admin_name = Column(String(100))
+    admin_pwd = Column(String(64))
+    admin_token = Column(String(40))
+    expire_time = Column(DateTime)
+
+
 # 用户表
 class user(Base):
     __tablename__ = "user"
@@ -66,6 +75,7 @@ class running_habits(Base):
     last_qd_time = Column(DateTime, default=datetime.datetime(1970, 1, 1, 0, 0))
     running_start_time = Column(DateTime)
 
+
 class habit_plaza(Base):
     __tablename__ = "habit_plaza"
     hid = Column(Integer, primary_key=True, index=True)
@@ -75,6 +85,7 @@ class habit_plaza(Base):
     habit_category = Column(String(500))
     habit_heat = Column(Integer)
     habit_create_time = Column(DateTime)
+
 
 # 积分表
 class credit(Base):
