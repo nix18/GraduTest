@@ -1,21 +1,18 @@
+import datetime
+import hashlib
+import os
+import traceback
 from multiprocessing import Pool
 from random import random
 
 import uvicorn
 from fastapi import FastAPI
-import datetime
-
 from sqlalchemy import func
 
-import utils.sqlUtils as sql
 import utils.creditUtils as credit
+import utils.sqlUtils as sql
 import utils.veriToken as veriToken
-import hashlib
-import traceback
-import os
-
-import utils.gen_habit_plaza
-from utils import gen_habit_plaza
+from utils import gen_habit_plaza, habitUtils
 
 app = FastAPI()
 
@@ -29,37 +26,106 @@ async def read_root():
     return {"这里是": "好习惯养成系统"}
 
 
-# 注册管理员
+'''
+--管理员部分--
+'''
+
+
+# 管理员注册
 # 管理员只能有一个
-@app.get("/registerForAdmin")
-async def register_for_admin(uid: int, token: str):
-    if veriToken.verification_token(uid, token) != -1:
-        pass
-    else:
-        return {"code": -1, "Msg": "登陆错误，凭据失效"}
-    qd_list = []
-    qd = sql.session.query(sql.clock_in).all()
-    sql.session.close()
-    for i in range(len(qd)):
-        qd_list.append(
-            {
-                'qd_id': qd[i].qd_id,
-                'uid': qd[i].uid,
-                'qd_time': qd[i].qd_time,
-            }
-        )
-    return qd_list
+@app.post("/registerForAdmin")
+async def register_for_admin(admin_name: str, admin_pwd: str):
+    try:
+        sql.session.commit()
+        isadminexist = sql.session.query(sql.admin.admin_name).first() is not None
+        if isadminexist:
+            return {"code": -1, "Msg": "管理员已存在，只能存在一个管理员"}
+        else:
+            # 密码加密处理在客户端
+            new_admin = sql.admin(admin_name=admin_name, admin_pwd=admin_pwd)
+            sql.session.add(new_admin)
+            sql.session.commit()
+            return {"code": 0, "Msg": "管理员注册成功"}
+    except:
+        traceback.print_exc()
+        sql.session.rollback()
+        return {"code": -1, "Msg": "管理员注册失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
-# TODO 管理员登录 管理员审核好习惯
+# 管理员登录
+@app.post("/loginForAdmin")
+async def log_in_for_admin(admin_name: str, admin_pwd: str):
+    try:
+        sql.session.commit()
+        cadmin = sql.session.query(sql.admin).filter(sql.admin.admin_name == admin_name).first()
+        # 判空
+        if cadmin is None:
+            return {"code": -1, "Msg": "管理员登录失败，用户不存在"}
+        cpwd = cadmin.admin_pwd
+        if admin_pwd == cpwd:  # 验证账号密码
+            timenext = datetime.datetime.now() + datetime.timedelta(days=3)
+            token = hashlib.sha1(os.urandom(32)).hexdigest()
+            sql.session.query(sql.admin).filter(sql.admin.admin_name == admin_name) \
+                .update({"admin_token": token, "expire_time": timenext})
+            sql.session.commit()
+            return {"code": 0, "admin_name": admin_name, "admin_token": token}
+        else:
+            return {"code": -1, "Msg": "管理员登录失败"}
+    except:
+        traceback.print_exc()
+        sql.session.rollback()
+        return {"code": -1, "Msg": "管理员登录失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
+# 管理员审核好习惯
+@app.post("/reviewHabitAdmin")
+async def review_habit_admin(admin_token: str, hid: int, operation: int):
+    try:
+        sql.session.commit()
+        if admin_token != sql.session.query(sql.admin.admin_token).first()[0]:
+            return {"code": -1, "Msg": "审核好习惯失败，管理员登录失效"}
+        if operation == 1:
+            sql.session.query(sql.good_habits).filter(sql.good_habits.hid == hid) \
+                .update({sql.good_habits.habit_isvisible: True})
+        elif operation == 2:
+            sql.session.query(sql.good_habits).filter(sql.good_habits.hid == hid) \
+                .delete()
+        else:
+            return {"code": -1, "Msg": "审核好习惯失败，操作码错误"}
+        sql.session.commit()
+        return {"code": 0, "Msg": "审核好习惯成功，操作：" + ("通过" if operation == 1 else "删除")}
+    except:
+        traceback.print_exc()
+        sql.session.rollback()
+        return {"code": -1, "Msg": "审核好习惯失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
+# 管理员查询好习惯
+@app.post("/selHabitsAdmin")
+async def sel_habits_admin(admin_token: str, hname: str = None, hcategory: str = None):
+    try:
+        sql.session.commit()
+        if admin_token != sql.session.query(sql.admin.admin_token).first()[0]:
+            return {"code": -1, "Msg": "查询习惯失败，管理员登录失效"}
+        habits = habitUtils.sel_habits(True, hname, hcategory)
+        return {"code": 0, "result": habits}
+    except:
+        traceback.print_exc()
+        return {"code": -1, "Msg": "查询习惯失败，服务器内部错误" + " 请联系: " + adminMail}
+
 
 # TODO 用户行为评估得出好习惯分数->用户等级
+
+'''
+--用户部分--
+'''
 
 
 # 注册
 @app.post("/register")
 async def register(uname: str, uprofile: str, upwd: str):
     try:
+        sql.session.commit()
         isnameexist = sql.session.query(sql.user.user_name).filter(sql.user.user_name == uname).first() is not None
         if isnameexist:
             return {"code": -1, "Msg": "名称已存在"}
@@ -83,7 +149,7 @@ async def log_in(uname: str, upwd: str):
         cuser = sql.session.query(sql.user).filter(sql.user.user_name == uname).first()
         # 判空
         if cuser is None:
-            return {"code": -1, "Msg": "登录失败"}
+            return {"code": -1, "Msg": "登录失败，用户不存在"}
         cpwd = cuser.user_pwd
         cuid = cuser.uid
         if upwd == cpwd:  # 验证账号密码
@@ -199,6 +265,11 @@ async def invalidate_token(uid: int, token: str):
         return {"code": -1, "Msg": "登出失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+'''
+--积分部分--
+'''
+
+
 # 获取积分总数目
 @app.post("/getCredit")
 async def get_credit(uid: int, token: str):
@@ -229,6 +300,11 @@ async def credit_lottery(uid: int, token: str):
         return {"code": -1, "Msg": "积分抽奖失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+'''
+--习惯部分--
+'''
+
+
 # 添加好习惯
 @app.post("/addhabit")
 async def add_habit(uid: int, token: str, hname: str, hcontent: str, hcategory: str = None):
@@ -248,23 +324,10 @@ async def add_habit(uid: int, token: str, hname: str, hcontent: str, hcategory: 
         return {"code": -1, "Msg": "习惯添加失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
-# 查询好习惯 f'{hname}'为格式化字符串，注意引号
 @app.get("/selhabits")
 async def sel_habits(hname: str = None, hcategory: str = None):
     try:
-        if hname is None:
-            if hcategory is None:
-                habits = sql.session.query(sql.good_habits).all()
-            else:
-                habits = sql.session.query(sql.good_habits).filter(
-                    sql.good_habits.habit_category.like(f'%{hcategory}%')).all()
-        else:
-            if hcategory is None:
-                habits = sql.session.query(sql.good_habits).filter(sql.good_habits.habit_name.like(f'%{hname}%')).all()
-            else:
-                habits = sql.session.query(sql.good_habits).filter(
-                    sql.good_habits.habit_name.like(f'%{hname}%'),
-                    sql.good_habits.habit_category.like(f'%{hcategory}%')).all()
+        habits = habitUtils.sel_habits(False, hname, hcategory)
         return {"code": 0, "result": habits}
     except:
         traceback.print_exc()
@@ -284,6 +347,7 @@ async def sel_my_habits(uid: int, token: str):
         return {"code": -1, "Msg": "查询自定义习惯失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+# TODO 修改完更改可视性为否
 @app.post("/modhabit")
 async def mod_habit(uid: int, token: str, hid: int, hname: str = None, hcontent: str = None, hcategory: str = None):
     cuid = veriToken.verification_token(uid, token)

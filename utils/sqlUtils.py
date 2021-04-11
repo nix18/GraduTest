@@ -6,7 +6,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-SQLALCHEMY_DATABASE_URI: str = 'mysql+pymysql://root:locked1234@localhost:3306/goodhabitsys'
+SQLALCHEMY_DATABASE_URI: str = 'mysql+pymysql://goodhabitsys:NwfrbN5jkHHzrmGK@goodhabitsys.moecola.com:3306' \
+                               '/goodhabitsys'
 # 生成一个SQLAlchemy引擎
 engine = create_engine(SQLALCHEMY_DATABASE_URI, pool_pre_ping=True)
 # 生成sessionlocal类，这个类的每一个实例都是一个数据库的会话
@@ -19,7 +20,7 @@ Base = declarative_base()
 # 管理员表
 class admin(Base):
     __tablename__ = "admin"
-    admin_name = Column(String(100))
+    admin_name = Column(String(100), primary_key=True)
     admin_pwd = Column(String(64))
     admin_token = Column(String(40))
     expire_time = Column(DateTime)
@@ -60,6 +61,7 @@ class good_habits(Base):
     habit_category = Column(String(500), default="其他")
     habit_heat = Column(Integer, default=0)
     habit_create_time = Column(DateTime)
+    habit_isvisible = Column(Boolean, default=True)  # 测试时默认可视
 
 
 # 进行中的好习惯
@@ -85,6 +87,7 @@ class habit_plaza(Base):
     habit_category = Column(String(500))
     habit_heat = Column(Integer)
     habit_create_time = Column(DateTime)
+    habit_isvisible = Column(Boolean, default=True)
 
 
 # 积分表

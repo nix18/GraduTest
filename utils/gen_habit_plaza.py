@@ -1,7 +1,6 @@
 import datetime
 import os
 import time
-from threading import Thread
 import utils.sqlUtils as sql
 
 
@@ -10,13 +9,14 @@ import utils.sqlUtils as sql
 def gen(interval: int, log: bool):
     """
     interval: 更新间隔时间（秒）
-    log: 是否开启日志
+    log: 是否开启命令行日志
     """
     print("习惯广场子进程 [%s]" % os.getpid())
     while True:
         if log is True:
             print("已更新习惯广场 " + str(datetime.datetime.now()))
-        top10 = sql.session.query(sql.good_habits).order_by(sql.good_habits.habit_heat.desc()).limit(10).all()
+        top10 = sql.session.query(sql.good_habits).filter(sql.good_habits.habit_isvisible == True).order_by(
+            sql.good_habits.habit_heat.desc()).limit(10).all()
         sql.session.query(sql.habit_plaza).delete()
         for items in top10:
             new_item = sql.habit_plaza(hid=items.hid, create_uid=items.create_uid, habit_name=items.habit_name,
