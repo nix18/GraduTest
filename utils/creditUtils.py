@@ -51,6 +51,15 @@ def credit_detail(uid: int, creditnum: int, creditdesc: str, ctime: datetime.dat
         return -1
 
 
+def get_credit_detail(uid: int):
+    try:
+        sql.session.commit()
+        return sql.session.query(sql.credit_detail).filter(sql.credit_detail.uid == uid).all()
+    except:
+        traceback.print_exc()
+        return
+
+
 def get_credit(uid: int):
     try:
         sql.session.commit()

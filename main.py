@@ -284,6 +284,22 @@ async def get_credit(uid: int, token: str):
         return {"code": -1, "Msg": "查询积分失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+@app.post("/creditDetail")
+async def credit_detail(uid: int, token: str):
+    cuid = veriToken.verification_token(uid, token)
+    try:
+        if cuid != -1:
+            result = credit.get_credit_detail(cuid)
+            if result is None:
+                return {"code": -1, "Msg": "积分详情异常"}
+            return {"code": 0, "result": result}
+        else:
+            return {"code": -1, "Msg": "查询积分详情失败，凭据失效"}
+    except:
+        traceback.print_exc()
+        return {"code": -1, "Msg": "查询积分详情失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
 @app.post("/creditLottery")
 async def credit_lottery(uid: int, token: str):
     cuid = veriToken.verification_token(uid, token)
