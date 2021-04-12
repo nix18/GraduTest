@@ -311,6 +311,8 @@ async def add_habit(uid: int, token: str, hname: str, hcontent: str, hcategory: 
     cuid = veriToken.verification_token(uid, token)
     try:
         if cuid != -1:
+            if len(hcategory) == 0:
+                hcategory = "其他"
             new_habit = sql.good_habits(create_uid=cuid, habit_name=hname, habit_content=hcontent,
                                         habit_category=hcategory, habit_create_time=datetime.datetime.now())
             sql.session.add(new_habit)
