@@ -55,7 +55,7 @@ def get_credit_detail(uid: int):
     try:
         sql.session.commit()
         return sql.session.query(sql.credit_detail).filter(sql.credit_detail.uid == uid) \
-            .order_by(sql.credit_detail.credit_time.desc()).all()
+            .order_by(sql.credit_detail.id.desc()).all()
     except:
         traceback.print_exc()
         return
