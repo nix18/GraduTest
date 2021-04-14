@@ -302,6 +302,8 @@ async def credit_detail(uid: int, token: str):
 
 @app.post("/creditLottery")
 async def credit_lottery(uid: int, token: str, count: int = 10):
+    if count <= 0 or count > 20:
+        return {"code": -1, "Msg": "积分抽奖失败，次数无效，请检查"}
     cuid = veriToken.verification_token(uid, token)
     try:
         if cuid != -1:
