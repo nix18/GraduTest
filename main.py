@@ -301,27 +301,11 @@ async def credit_detail(uid: int, token: str):
 
 
 @app.post("/creditLottery")
-async def credit_lottery(uid: int, token: str):
+async def credit_lottery(uid: int, token: str, count: int = 10):
     cuid = veriToken.verification_token(uid, token)
     try:
         if cuid != -1:
-            result = credit.credit_lottery_duo(cuid, 10)
-            if len(result) == 0:
-                return {"code": -1, "Msg": "积分抽奖失败，积分不足"}
-            return {"code": 0, "Uid": cuid, "Index": result}
-        else:
-            return {"code": -1, "Msg": "积分抽奖失败，凭据失效"}
-    except:
-        traceback.print_exc()
-        return {"code": -1, "Msg": "积分抽奖失败，服务器内部错误" + " 请联系: " + adminMail}
-
-
-@app.post("/creditLotteryOne")
-async def credit_lottery_one(uid: int, token: str):
-    cuid = veriToken.verification_token(uid, token)
-    try:
-        if cuid != -1:
-            result = credit.credit_lottery_duo(cuid, 1)
+            result = credit.credit_lottery_duo(cuid, count)
             if len(result) == 0:
                 return {"code": -1, "Msg": "积分抽奖失败，积分不足"}
             return {"code": 0, "Uid": cuid, "Index": result}
