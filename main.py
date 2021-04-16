@@ -512,7 +512,7 @@ async def give_up_habit(uid: int, token: str, rhid: int):
 async def habit_plaza():
     try:
         sql.session.commit()
-        top10 = sql.session.query(sql.habit_plaza).all()
+        top10 = sql.session.query(sql.habit_plaza).order_by(sql.habit_plaza.habit_heat.desc()).all()
         return {"code": 0, "result": top10}
     except:
         return {"code": -1, "Msg": "查询习惯广场失败，服务器内部错误" + " 请联系: " + adminMail}
