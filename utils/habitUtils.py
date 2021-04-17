@@ -27,3 +27,9 @@ def sel_habits(isadmin: bool, hname: str = None, hcategory: str = None):
                 sql.good_habits.habit_category.like(
                     f'%{hcategory}%')).all()
     return habits
+
+
+def sel_habit_by_hid(hid: int):
+    if hid > 0:
+        return sql.session.query(sql.good_habits).filter(sql.good_habits.hid == hid).first()
+    return

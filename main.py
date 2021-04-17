@@ -354,6 +354,19 @@ async def sel_habits(hname: str = None, hcategory: str = None):
         return {"code": -1, "Msg": "查询习惯失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+@app.post("/selHabitByHid")
+async def sel_habit_by_hid(uid: int, token: str, hid: int):
+    cuid = veriToken.verification_token(uid, token)
+    try:
+        if cuid != -1:
+            sql.session.commit()
+            return {"code": 0, "result": habitUtils.sel_habit_by_hid(hid)}
+        return {"code": -1, "Msg": "通过Hid查询习惯失败，凭据失效"}
+    except:
+        traceback.print_exc()
+        return {"code": -1, "Msg": "通过Hid查询习惯失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
 @app.get("/selmyhabits")
 async def sel_my_habits(uid: int, token: str):
     cuid = veriToken.verification_token(uid, token)
@@ -438,7 +451,21 @@ async def buy_habit(uid: int, token: str, hid: int, user_config: str, target_day
         return {"code": -1, "Msg": "购买习惯失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
-# TODO 习惯签到返还积分
+@app.post("/selMyRunningHabits")
+async def sel_my_running_habits(uid: int, token: str):
+    cuid = veriToken.verification_token(uid, token)
+    try:
+        if cuid != -1:
+            sql.session.commit()
+            running_habits = sql.session.query(sql.running_habits).filter(sql.running_habits.uid == cuid).all()
+            return {"code": 0, "result": running_habits}
+        return {"code": -1, "Msg": "查询正在养成的习惯失败，凭据失效"}
+    except:
+        traceback.print_exc()
+        return {"code": -1, "Msg": "查询正在养成的习惯失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
+# 习惯签到
 @app.post("/habitclockin")
 async def habit_clock_in(uid: int, token: str, rhid: int):
     cuid = veriToken.verification_token(uid, token)
