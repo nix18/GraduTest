@@ -422,7 +422,7 @@ async def del_habit(uid: int, token: str, hid: int):
     except:
         traceback.print_exc()
         sql.session.rollback()
-        return {"code": -1, "Msg": "删除失败，服务器内部错误" + " 请联系: " + adminMail}
+        return {"code": -1, "Msg": "删除失败，可能有用户正在养成此习惯，如果仍想删除" + " 请联系: " + adminMail}
 
 
 @app.post("/buyhabit")
