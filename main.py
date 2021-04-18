@@ -444,11 +444,27 @@ async def buy_habit(uid: int, token: str, hid: int, user_config: str, target_day
             sql.session.add(rh)
             sql.session.commit()
             return {"code": 0, "Msg": "购买习惯成功，返还积分 " + str(bonus)}
-        return {"code": -1, "Msg": "购买习惯失败，用户不存在"}
+        return {"code": -1, "Msg": "购买习惯失败，凭据失效"}
     except:
         traceback.print_exc()
         sql.session.rollback()
         return {"code": -1, "Msg": "购买习惯失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
+@app.post("/updateRunningHabit")
+async def update_running_habit(uid: int, token: str, rhid: int, user_config: str):
+    cuid = veriToken.verification_token(uid, token)
+    try:
+        if cuid != -1:
+            sql.session.query(sql.running_habits).filter(sql.running_habits.rhid == rhid).update(
+                {sql.running_habits.user_config: user_config})
+            sql.session.commit()
+            return {"code": -1, "Msg": "更新养成中习惯成功"}
+        return {"code": -1, "Msg": "更新养成中习惯失败，凭据失效"}
+    except:
+        traceback.print_exc()
+        sql.session.rollback()
+        return {"code": -1, "Msg": "更新养成中习惯失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 @app.post("/selMyRunningHabits")
