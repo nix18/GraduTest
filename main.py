@@ -456,10 +456,13 @@ async def update_running_habit(uid: int, token: str, rhid: int, user_config: str
     cuid = veriToken.verification_token(uid, token)
     try:
         if cuid != -1:
-            sql.session.query(sql.running_habits).filter(sql.running_habits.rhid == rhid).update(
-                {sql.running_habits.user_config: user_config})
             sql.session.commit()
-            return {"code": -1, "Msg": "更新养成中习惯成功"}
+            if sql.session.query(sql.running_habits.uid).filter(sql.running_habits.rhid == rhid).first()[0] == uid:
+                sql.session.query(sql.running_habits).filter(sql.running_habits.rhid == rhid).update(
+                    {sql.running_habits.user_config: user_config})
+                sql.session.commit()
+                return {"code": 0, "Msg": "更新养成中习惯成功"}
+            return {"code": -1, "Msg": "更新养成中习惯失败，不可以修改他人习惯"}
         return {"code": -1, "Msg": "更新养成中习惯失败，凭据失效"}
     except:
         traceback.print_exc()
