@@ -432,6 +432,9 @@ async def buy_habit(uid: int, token: str, hid: int, user_config: str, target_day
     bonus = capital * multiple
     try:
         if cuid != -1:
+            sql.session.commit()
+            if sql.session.query(sql.running_habits).filter(sql.running_habits.uid == cuid).count() >= 20:
+                return {"code": -1, "Msg": "购买习惯失败，达到养成中习惯最大值20"}
             habit_to_buy = sql.session.query(sql.good_habits).filter(sql.good_habits.hid == hid).first()
             ret = credit.credit_consume(uid, capital, "购买习惯：" + habit_to_buy.habit_name)
             if ret == -1:
