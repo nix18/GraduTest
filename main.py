@@ -571,6 +571,7 @@ if __name__ == '__main__':
     pool = Pool(processes=1)
     pool.apply_async(gen_habit_plaza.gen, args=(10, False))
     print("主进程 [%s]" % os.getpid())
-    uvicorn.run(app='main:app', host="0.0.0.0", port=8000, reload=True, debug=True)
+    uvicorn.run(app='main:app', host="0.0.0.0", port=8000, reload=True, debug=True,
+                ssl_keyfile="./goodhabitsys.key", ssl_certfile="./goodhabitsys.pem")
     pool.close()
     pool.join()
