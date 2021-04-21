@@ -5,6 +5,7 @@ import traceback
 from multiprocessing import Pool
 from random import random
 
+import requests
 import uvicorn
 from fastapi import FastAPI
 from sqlalchemy import func
@@ -173,6 +174,57 @@ async def log_in(uname: str, upwd: str):
         return {"code": -1, "Msg": "登录失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+@app.post("/login_WX")
+async def login_WX(uname: str, upwd: str):
+    try:
+        uname = "WX_" + uname[-12:-1]
+        sql.session.commit()
+        isnameexist = sql.session.query(sql.user.user_name).filter(sql.user.user_name == uname).first() is not None
+        if isnameexist:
+            pass
+        else:
+            # 密码加密处理在客户端
+            new_user = sql.user(user_name=uname, user_profile="", user_pwd=upwd)
+            sql.session.add(new_user)
+            sql.session.commit()
+        # 登录
+        cuser = sql.session.query(sql.user).filter(sql.user.user_name == uname).first()
+        cpwd = cuser.user_pwd
+        cuid = cuser.uid
+        if upwd == cpwd:  # 验证账号密码
+            isexist = sql.session.query(sql.token_list.token).filter(sql.token_list.uid == cuid).first()
+            timenext = datetime.datetime.now() + datetime.timedelta(days=3)
+            token = hashlib.sha1(os.urandom(32)).hexdigest()
+            if isexist is None:
+                new_token = sql.token_list(uid=cuid, token=token,
+                                           expire_time=timenext)
+                sql.session.add(new_token)
+            else:
+                sql.session.query(sql.token_list).filter(sql.token_list.uid == cuid) \
+                    .update({"token": token, "expire_time": timenext})
+            sql.session.commit()
+            return {"code": 0, "uid": cuid, "user_profile": cuser.user_profile, "user_token": token}
+        else:
+            return {"code": -1, "Msg": "登录失败"}
+    except:
+        traceback.print_exc()
+        sql.session.rollback()
+        return {"code": -1, "Msg": "用户注册失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
+@app.post("/getInfoWX")
+async def get_Info_WX(code: str):
+    url = "https://api.weixin.qq.com/sns/jscode2session"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                      'Chrome/70.0.3538.77 Safari/537.36 '
+    }
+    r = requests.get(url,
+                     params={'appid': 'wxf7d1deaed7693c86', 'secret': '2d514ef6be29f82454f95588dbbab7eb',
+                             'js_code': code, 'grant_type': 'authorization_code'}, headers=headers, verify=False)
+    return r.json()
+
+
 @app.post("/updateUser")
 async def update_user(uid: int, token: str, uprofile: str = None, upwd: str = None):
     cuid = veriToken.verification_token(uid, token)
@@ -238,9 +290,13 @@ async def clock_in(uid: int, token: str):
 
 
 @app.post("/chkToken")
-async def chk_token(uid: int, token: str):
+async def chk_token(uid: int, token: str, iswx: int = None):
+    sql.session.commit()
     cuid = veriToken.verification_token(uid, token)
     if cuid == uid:
+        if iswx == 1:
+            return {"code": 0, "user_profile":
+                sql.session.query(sql.user.user_profile).filter(sql.user.uid == uid).first()[0], "Msg": "Token有效"}
         return {"code": 0, "Msg": "Token有效"}
     else:
         return {"code": -1, "Msg": "Token无效"}
