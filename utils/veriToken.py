@@ -1,13 +1,14 @@
-import utils.sqlUtils as sql
 import datetime
 from functools import singledispatch  # 通过第一个参数类型判断函数
-import traceback
+
+import utils.sqlUtils as sql
 
 
 # 验证token是否有效
 @singledispatch
 def verification_token(uid, token: str):
     try:
+        sql.session.commit()
         store_token_list = sql.session.query(sql.token_list).filter(sql.token_list.uid == uid).first()
         if store_token_list.token == token:
             if datetime.datetime.now() < store_token_list.expire_time:
@@ -27,6 +28,7 @@ def verification_token(uid, token: str):
 @verification_token.register(str)
 def _verification_token(uname, token: str):
     try:
+        sql.session.commit()
         store_token_list = sql.session.query(sql.token_list) \
             .join(sql.user, sql.token_list.uid == sql.user.uid).filter(sql.user.user_name == uname).first()
         if store_token_list.token == token:
