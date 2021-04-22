@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 from time import localtime, time, strftime, sleep
 from typing import List
 
@@ -111,6 +112,7 @@ def remind(send: bool):
 
 
 def worker(interval: int, send: bool):
+    print("邮件提醒子进程 [%s]" % os.getpid())
     while True:
         remind(send)
         sleep(interval)
