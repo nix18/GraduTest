@@ -85,7 +85,7 @@ def datetimestrptime(time_string, time_fmt):
     return datetime.datetime.strptime(time_string, time_fmt)
 
 
-def remind(send: bool):
+def remind(interval: int, send: bool):
     sql.session.commit()
     wx_running_habits = sql.session.query(sql.running_habits).filter(sql.running_habits.target_days == 0).all()
     for habits in wx_running_habits:
@@ -99,11 +99,11 @@ def remind(send: bool):
                 remind_time = datetimestrptime(config_dict['remind_time'], "%H:%M")
                 now_time = datetimestrptime(strftime("%H:%M", localtime()), "%H:%M")
                 delta = now_time - remind_time
-                if delta.seconds < 181:
+                if delta.seconds < interval + 1:
                     wx_user_mail = sql.session.query(sql.user.user_profile).filter(sql.user.uid == habits.uid).first()[
                         0]
                     habit_data = sql.session.query(sql.good_habits).filter(sql.good_habits.hid == habits.hid).first()
-                    if (send):
+                    if send:
                         Reminder.main(["好习惯养成提醒", wx_user_mail, "好习惯养成提醒: " + habit_data.habit_name,
                                        habit_data.habit_content, habit_data.habit_content])
                     else:
@@ -114,5 +114,5 @@ def remind(send: bool):
 def worker(interval: int, send: bool):
     print("邮件提醒子进程 [%s]" % os.getpid())
     while True:
-        remind(send)
+        remind(interval, send)
         sleep(interval)
