@@ -13,7 +13,7 @@ from sqlalchemy import func
 import utils.creditUtils as credit
 import utils.sqlUtils as sql
 import utils.veriToken as veriToken
-from utils import gen_habit_plaza, habitUtils
+from utils import gen_habit_plaza, habitUtils, weixinRemindWorker
 
 app = FastAPI()
 
@@ -624,8 +624,9 @@ async def habit_plaza():
 
 
 if __name__ == '__main__':
-    pool = Pool(processes=1)
+    pool = Pool(processes=2)
     pool.apply_async(gen_habit_plaza.gen, args=(10, False))
+    pool.apply_async(weixinRemindWorker.worker, args=(180, False))
     print("主进程 [%s]" % os.getpid())
     uvicorn.run(app='main:app', host="0.0.0.0", port=8000, reload=True, debug=True,
                 ssl_keyfile="./goodhabitsys.key", ssl_certfile="./goodhabitsys.pem")
