@@ -17,16 +17,18 @@ import utils.sqlUtils as sql
 '''
 
 
-def gen(t: str):
+def gen(t: str, log: bool):
     print("用户等级子进程 [%s]" % os.getpid())
     print("每天 " + t + " 更新用户等级积分")
-    schedule.every().day.at(t).do(job)
+    schedule.every().day.at(t).do(job, log)
     while True:
         schedule.run_pending()
         time.sleep(1)
 
 
-def job():
+def job(log: bool):
+    if log:
+        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + " 开始更新用户等级积分")
     sql.session.commit()
     now = datetime.date.today()
     users = sql.session.query(sql.user.uid).filter(sql.user.user_name.notlike("WX_%")).all()
@@ -45,6 +47,8 @@ def job():
                 modScore(u[0], 50)
             if "放弃" in note.credit_desc:
                 modScore(u[0], -60)
+    if log:
+        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + " 完成更新用户等级积分")
 
 
 def modScore(uid: int, val: int):
