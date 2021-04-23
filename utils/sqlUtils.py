@@ -110,4 +110,14 @@ class credit_detail(Base):
     credit_time = Column(DateTime)  # 记录时间
 
 
+# 商品兑换表
+class exchange_goods(Base):
+    __tablename__ = "exchange_goods"
+    gid = Column(Integer, primary_key=True, autoincrement=True)
+    goods_name = Column(String(500))
+    goods_pic_b64 = Column(String(600000))
+    goods_price = Column(Integer, default=9999)
+    goods_stock = Column(Integer, default=1)
+
+
 Base.metadata.create_all(bind=engine)
