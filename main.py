@@ -640,7 +640,7 @@ if __name__ == '__main__':
     pool = Pool(processes=3)
     pool.apply_async(genHabitPlazaWorker.gen, args=(10, False))
     pool.apply_async(weixinRemindWorker.worker, args=(180, False))
-    pool.apply_async(genUserScoreWorker.gen, args="23:30")
+    pool.apply_async(genUserScoreWorker.gen, args=("23:30", True))
     print("主进程 [%s]" % os.getpid())
     uvicorn.run(app='main:app', host="0.0.0.0", port=8000, reload=True, debug=True,
                 ssl_keyfile="./goodhabitsys.key", ssl_certfile="./goodhabitsys.pem")
