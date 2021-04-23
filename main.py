@@ -363,6 +363,29 @@ async def get_exchange_goods():
         return {"code": -1, "Msg": "查询商品列表失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+@app.post("/exchangeGoods")
+async def exchange_goods(uid: int, token: str, gid: int):
+    cuid = veriToken.verification_token(uid, token)
+    try:
+        if cuid != -1:
+            sql.session.commit()
+            sel_goods = sql.session.query(sql.exchange_goods).filter(sql.exchange_goods.gid == gid).first()
+            if sel_goods.goods_stock <= 0:
+                return {"code": -1, "Msg": "积分兑换失败，库存不足"}
+            ret = credit.credit_consume(cuid, sel_goods.goods_price, "积分兑换：" + sel_goods.goods_name)
+            if ret == -1:
+                return {"code": -1, "Msg": "积分兑换失败，积分不足"}
+            sql.session.query(sql.exchange_goods).filter(sql.exchange_goods.gid == gid).update(
+                {sql.exchange_goods.goods_stock: sql.exchange_goods.goods_stock - 1}
+            )
+            sql.session.commit()
+            return {"code": 0, "Msg": "积分兑换成功，商品:" + sel_goods.goods_name + "，请联系客服提供邮递方式后领取"}
+        return {"code": -1, "Msg": "积分兑换失败，凭据失效"}
+    except:
+        traceback.print_exc()
+        return {"code": -1, "Msg": "积分兑换失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
 @app.post("/creditDetail")
 async def credit_detail(uid: int, token: str):
     cuid = veriToken.verification_token(uid, token)
