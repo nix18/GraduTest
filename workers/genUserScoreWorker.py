@@ -1,4 +1,5 @@
 import datetime
+import os
 import time
 
 import schedule as schedule
@@ -17,6 +18,8 @@ import utils.sqlUtils as sql
 
 
 def gen(t: str):
+    print("用户等级子进程 [%s]" % os.getpid())
+    print("每天 " + t + " 更新用户等级积分")
     schedule.every().day.at(t).do(job)
     while True:
         schedule.run_pending()
