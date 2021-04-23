@@ -352,6 +352,17 @@ async def get_credit(uid: int, token: str):
         return {"code": -1, "Msg": "查询积分失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+@app.get("/getExchangeGoods")
+async def get_exchange_goods():
+    try:
+        sql.session.commit()
+        ret = sql.session.query(sql.exchange_goods).all()
+        return {"code": 0, "result": ret}
+    except:
+        traceback.print_exc()
+        return {"code": -1, "Msg": "查询商品列表失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
 @app.post("/creditDetail")
 async def credit_detail(uid: int, token: str):
     cuid = veriToken.verification_token(uid, token)
