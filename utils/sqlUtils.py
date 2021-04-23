@@ -33,6 +33,7 @@ class user(Base):
     user_name = Column(String(100))
     user_profile = Column(String(500))
     user_pwd = Column(String(64))
+    user_score = Column(Integer, default=1000)
 
 
 # 用户签到表
