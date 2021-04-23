@@ -13,7 +13,8 @@ from sqlalchemy import func
 import utils.creditUtils as credit
 import utils.sqlUtils as sql
 import utils.veriToken as veriToken
-from utils import gen_habit_plaza, habitUtils, weixinRemindWorker
+from utils import habitUtils
+from workers import weixinRemindWorker, genHabitPlazaWorker, genUserScoreWorker
 
 app = FastAPI()
 
@@ -248,7 +249,6 @@ async def update_user(uid: int, token: str, uprofile: str = None, upwd: str = No
         return {"code": -1, "Msg": "用户信息修改失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
-# TODO 达到积分完成习惯
 # 签到
 @app.post("/qiandao")
 async def clock_in(uid: int, token: str):
@@ -291,7 +291,6 @@ async def clock_in(uid: int, token: str):
 
 @app.post("/chkToken")
 async def chk_token(uid: int, token: str, iswx: int = None):
-    sql.session.commit()
     cuid = veriToken.verification_token(uid, token)
     if cuid == uid:
         if iswx == 1:
@@ -300,6 +299,19 @@ async def chk_token(uid: int, token: str, iswx: int = None):
         return {"code": 0, "Msg": "Token有效"}
     else:
         return {"code": -1, "Msg": "Token无效"}
+
+
+@app.post("/getUserScore")
+async def get_user_score(uid: int, token: str):
+    cuid = veriToken.verification_token(uid, token)
+    try:
+        if cuid != -1:
+            ret = sql.session.query(sql.user.user_score).filter(sql.user.uid == cuid).first()[0]
+            return {"code": 0, "uid": cuid, "score": ret}
+        return {"code": -1, "Msg": "查询用户score失败，凭据失效"}
+    except:
+        traceback.print_exc()
+        return {"code": -1, "Msg": "查询用户score失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 @app.post("/invalidateToken")
@@ -602,6 +614,7 @@ async def give_up_habit(uid: int, token: str, rhid: int):
                 sql.running_habits.uid == uid, sql.running_habits.rhid == rhid).delete()
             sql.session.commit()
             if ret != 0:
+                credit.credit_add(cuid, 0, "放弃好习惯")
                 return {"code": 0, "Msg": "放弃习惯成功"}
             else:
                 return {"code": -1, "Msg": "放弃习惯失败，输入信息有误"}
@@ -624,9 +637,10 @@ async def habit_plaza():
 
 
 if __name__ == '__main__':
-    pool = Pool(processes=2)
-    pool.apply_async(gen_habit_plaza.gen, args=(10, False))
+    pool = Pool(processes=3)
+    pool.apply_async(genHabitPlazaWorker.gen, args=(10, False))
     pool.apply_async(weixinRemindWorker.worker, args=(180, False))
+    pool.apply_async(genUserScoreWorker.gen, args="23:30")
     print("主进程 [%s]" % os.getpid())
     uvicorn.run(app='main:app', host="0.0.0.0", port=8000, reload=True, debug=True,
                 ssl_keyfile="./goodhabitsys.key", ssl_certfile="./goodhabitsys.pem")
