@@ -1,8 +1,8 @@
+import datetime
 import random
 import traceback
 
 import utils.sqlUtils as sql
-import datetime
 
 
 def credit_add(uid: int, creditnum: int, creditdesc: str):
@@ -30,7 +30,7 @@ def credit_add(uid: int, creditnum: int, creditdesc: str):
 def credit_consume(uid: int, creditnum: int, creditdesc: str):
     num = get_credit(uid)
     if num is None:
-        credit_add(uid, 0, "积分初始化")
+        credit_add(uid, 0, "积分账户初始化")
         num = [0]
     if creditnum > num[0]:
         return -1
