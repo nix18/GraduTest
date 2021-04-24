@@ -8,7 +8,7 @@ from random import random
 import requests
 import uvicorn
 from fastapi import FastAPI
-from sqlalchemy import func
+from sqlalchemy import func, DATE, cast
 
 import utils.creditUtils as credit
 import utils.sqlUtils as sql
@@ -418,6 +418,36 @@ async def credit_lottery(uid: int, token: str, count: int = 10):
     except:
         traceback.print_exc()
         return {"code": -1, "Msg": "积分抽奖失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
+@app.post("/getCreditAnalyse")
+async def get_credit_analyse(uid: int, token: str):
+    cuid = veriToken.verification_token(uid, token)
+    try:
+        if cuid != -1:
+            time_limit = datetime.datetime.today() + datetime.timedelta(days=-30)
+            data_list = [0, 0, 0, 0, 0]
+            sql.session.commit()
+            records = sql.session.query(sql.credit_detail). \
+                filter(sql.credit_detail.uid == uid,
+                       cast(sql.credit_detail.credit_time, DATE) >= time_limit).all()
+            for record in records:
+                if "签到" in record.credit_desc:
+                    data_list[0] += record.credit_num
+                if "习惯打卡" in record.credit_desc:
+                    data_list[1] += record.credit_num
+                if "购买" in record.credit_desc:
+                    data_list[2] += record.credit_num
+                if "兑换" in record.credit_desc:
+                    data_list[3] += record.credit_num
+                if "抽奖" in record.credit_desc:
+                    data_list[4] += record.credit_num
+            return {"code": 0, "data1": data_list[0], "data2": data_list[1], "data3": data_list[2],
+                    "data4": data_list[3], "data5": data_list[4]}
+        return {"code": -1, "Msg": "查询积分分析失败，凭据失效"}
+    except:
+        traceback.print_exc()
+        return {"code": -1, "Msg": "查询积分分析失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
 '''
