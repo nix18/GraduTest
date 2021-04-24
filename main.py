@@ -2,6 +2,7 @@ import datetime
 import hashlib
 import os
 import traceback
+from collections import OrderedDict
 from multiprocessing import Pool
 from random import random
 
@@ -692,6 +693,8 @@ async def get_habit_clock_in_analyse(uid: int, token: str):
                     if record.credit_time.date() < now.date():
                         break
                 now += datetime.timedelta(days=-1)
+            # 逆序data，优化展示效果
+            data = OrderedDict(sorted(data.items(), key=lambda t: t[0], reverse=False))
             return {"code": 0, "result": data}
         return {"code": -1, "Msg": "习惯打卡分析失败，凭据失效"}
     except:
