@@ -669,6 +669,36 @@ async def habit_clock_in(uid: int, token: str, rhid: int):
         return {"code": -1, "Msg": "习惯打卡失败，服务器内部错误" + " 请联系: " + adminMail}
 
 
+@app.post("/getHabitClockInAnalyse")
+async def get_habit_clock_in_analyse(uid: int, token: str):
+    cuid = veriToken.verification_token(uid, token)
+    try:
+        if cuid != -1:
+            data = {}
+            now = datetime.datetime.today()
+            time_limit = datetime.datetime.today() + datetime.timedelta(days=-30)
+            sql.session.commit()
+            records = sql.session.query(sql.credit_detail). \
+                filter(sql.credit_detail.uid == uid,
+                       cast(sql.credit_detail.credit_time, DATE) >= time_limit).order_by(
+                sql.credit_detail.id.desc()
+            ).all()
+            for i in range(30):
+                data[now.strftime('%m/%d')] = 0
+                for record in records:
+                    if "习惯打卡" in record.credit_desc:
+                        if record.credit_time.date() == now.date():
+                            data[now.strftime('%m/%d')] += 1
+                    if record.credit_time.date() < now.date():
+                        break
+                now += datetime.timedelta(days=-1)
+            return {"code": 0, "result": data}
+        return {"code": -1, "Msg": "习惯打卡分析失败，凭据失效"}
+    except:
+        traceback.print_exc()
+        return {"code": -1, "Msg": "习惯打卡分析失败，服务器内部错误" + " 请联系: " + adminMail}
+
+
 @app.post("/giveuphabit")
 async def give_up_habit(uid: int, token: str, rhid: int):
     cuid = veriToken.verification_token(uid, token)
