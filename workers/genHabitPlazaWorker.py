@@ -16,6 +16,7 @@ def gen(interval: int, log: bool):
     while True:
         if log is True:
             print("已更新习惯广场 " + str(datetime.datetime.now()))
+        sql.session.commit()
         top10 = sql.session.query(sql.good_habits).filter(sql.good_habits.habit_isvisible == True).order_by(
             sql.good_habits.habit_heat.desc()).limit(10).all()
         sql.session.query(sql.habit_plaza).delete()
