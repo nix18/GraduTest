@@ -136,6 +136,9 @@ async def register(uname: str, uprofile: str, upwd: str):
             new_user = sql.user(user_name=uname, user_profile=uprofile, user_pwd=upwd)
             sql.session.add(new_user)
             sql.session.commit()
+            user = sql.session.query(sql.user).filter(sql.user.user_name == uname).first()
+            credit.credit_add(user.uid, 0, "积分账户初始化")
+            credit.credit_add(user.uid, 500, "注册赠送500积分")
             return {"code": 0, "Msg": "注册成功"}
     except:
         traceback.print_exc()
