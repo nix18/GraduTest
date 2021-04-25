@@ -703,7 +703,7 @@ async def get_habit_clock_in_analyse(uid: int, token: str):
 
 
 @app.post("/giveuphabit")
-async def give_up_habit(uid: int, token: str, rhid: int):
+async def give_up_habit(uid: int, token: str, rhid: int, isfull: bool = False):
     cuid = veriToken.verification_token(uid, token)
     try:
         if cuid != -1:
@@ -711,8 +711,11 @@ async def give_up_habit(uid: int, token: str, rhid: int):
                 sql.running_habits.uid == uid, sql.running_habits.rhid == rhid).delete()
             sql.session.commit()
             if ret != 0:
-                credit.credit_add(cuid, 0, "放弃好习惯")
-                return {"code": 0, "Msg": "放弃习惯成功"}
+                if isfull:
+                    credit.credit_add(cuid, 0, "完成养成好习惯")
+                else:
+                    credit.credit_add(cuid, 0, "放弃好习惯")
+                return {"code": 0, "Msg": "删除习惯成功"}
             else:
                 return {"code": -1, "Msg": "放弃习惯失败，输入信息有误"}
         return {"code": -1, "Msg": "放弃习惯失败，用户不存在"}
