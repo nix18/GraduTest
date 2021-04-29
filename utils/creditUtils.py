@@ -7,20 +7,13 @@ import utils.sqlUtils as sql
 
 def credit_add(uid: int, creditnum: int, creditdesc: str):
     try:
-        ret = sql.session.query(sql.credit).filter(sql.credit.uid == uid) \
-            .update({sql.credit.credit_sum: sql.credit.credit_sum + creditnum}, synchronize_session=False)
+        ret = sql.session.query(sql.user).filter(sql.user.uid == uid) \
+            .update({sql.user.credit_sum: sql.user.credit_sum + creditnum}, synchronize_session=False)
         credit_detail(uid, creditnum, creditdesc, datetime.datetime.now())
         sql.session.commit()
         if ret == 1:
             return 0
-        else:
-            isexist = sql.session.query(sql.credit).filter(sql.credit.uid == uid).first()
-            if isexist is None:
-                new_credit = sql.credit(uid=uid, credit_sum=creditnum)
-                sql.session.add(new_credit)
-                sql.session.commit()
-                return 0
-            return -1
+        return -1
     except:
         traceback.print_exc()
         sql.session.rollback()
@@ -64,19 +57,14 @@ def get_credit_detail(uid: int):
 def get_credit(uid: int):
     try:
         sql.session.commit()
-        result = sql.session.query(sql.credit.credit_sum).filter(sql.credit.uid == uid).first()
+        result = sql.session.query(sql.user.credit_sum).filter(sql.user.uid == uid).first()
         if result[0] is None:
             raise Exception
         return result
     except:
-        try:
-            credit_add(uid, 0, "积分账户初始化")
-            sql.session.commit()
-            return sql.session.query(sql.credit.credit_sum).filter(sql.credit.uid == uid).first()
-        except:
-            traceback.print_exc()
-            sql.session.rollback()
-    return -1
+        traceback.print_exc()
+        sql.session.rollback()
+        return -1
 
 
 def operate_credit_lottery_sum(uid: int, type: int):
@@ -89,10 +77,10 @@ def operate_credit_lottery_sum(uid: int, type: int):
     try:
         if type == 0:
             sql.session.commit()
-            return sql.session.query(sql.credit.lottery_sum).filter(sql.credit.uid == uid).first()
+            return sql.session.query(sql.user.lottery_sum).filter(sql.user.uid == uid).first()
         if type == 1:
-            ret = sql.session.query(sql.credit).filter(sql.credit.uid == uid).update(
-                {sql.credit.lottery_sum: 0},
+            ret = sql.session.query(sql.user).filter(sql.user.uid == uid).update(
+                {sql.user.lottery_sum: 0},
                 synchronize_session=False)
             sql.session.commit()
             return ret
@@ -111,10 +99,10 @@ def operate_credit_lottery_Ssum(uid: int, type: int):
     try:
         if type == 0:
             sql.session.commit()
-            return sql.session.query(sql.credit.lottery_Ssum).filter(sql.credit.uid == uid).first()
+            return sql.session.query(sql.user.lottery_Ssum).filter(sql.user.uid == uid).first()
         if type == 1:
-            ret = sql.session.query(sql.credit).filter(sql.credit.uid == uid).update(
-                {sql.credit.lottery_Ssum: 0},
+            ret = sql.session.query(sql.user).filter(sql.user.uid == uid).update(
+                {sql.user.lottery_Ssum: 0},
                 synchronize_session=False)
             sql.session.commit()
             return ret
@@ -160,8 +148,8 @@ def credit_lottery(uid: int):
     # 将大小保底计数+1
     global ret1
     try:
-        ret1 = sql.session.query(sql.credit).filter(sql.credit.uid == uid).update(
-            {sql.credit.lottery_sum: sql.credit.lottery_sum + 1, sql.credit.lottery_Ssum: sql.credit.lottery_Ssum + 1},
+        ret1 = sql.session.query(sql.user).filter(sql.user.uid == uid).update(
+            {sql.user.lottery_sum: sql.user.lottery_sum + 1, sql.user.lottery_Ssum: sql.user.lottery_Ssum + 1},
             synchronize_session=False)
         sql.session.commit()
     except:
