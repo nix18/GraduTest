@@ -79,10 +79,11 @@ class running_habits(Base):
     running_start_time = Column(DateTime)
 
 
+# 习惯广场表
 class habit_plaza(Base):
     __tablename__ = "habit_plaza"
     hid = Column(Integer, primary_key=True, index=True)
-    create_uid = Column(Integer, ForeignKey(user.uid))
+    create_uid = Column(Integer)
     habit_name = Column(String(500))
     habit_content = Column(String(5000))
     habit_category = Column(String(500))
