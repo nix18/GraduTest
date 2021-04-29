@@ -6,8 +6,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-SQLALCHEMY_DATABASE_URI: str = 'mysql+pymysql://goodhabitsys:NwfrbN5jkHHzrmGK@goodhabitsys.moecola.com:3306' \
-                               '/goodhabitsys'
+SQLALCHEMY_DATABASE_URI: str = 'mysql+pymysql://habitsys_final:FTk8BPzitCXPkGc7@goodhabitsys.moecola.com:3306' \
+                               '/habitsys_final'
 # 生成一个SQLAlchemy引擎
 engine = create_engine(SQLALCHEMY_DATABASE_URI, pool_pre_ping=True)
 # 生成sessionlocal类，这个类的每一个实例都是一个数据库的会话
@@ -34,22 +34,13 @@ class user(Base):
     user_profile = Column(String(500))
     user_pwd = Column(String(64))
     user_score = Column(Integer, default=1000)
-
-
-# 用户签到表
-class clock_in(Base):
-    __tablename__ = "clock_in"
-    uid = Column(Integer, ForeignKey(user.uid), primary_key=True, index=True)
-    last_qd_time = Column(DateTime)  # 最后签到时间
-    lq_count = Column(Integer)  # 连签天数
-
-
-# 用户Token存储表
-class token_list(Base):
-    __tablename__ = "token_list"
-    uid = Column(Integer, ForeignKey(user.uid), primary_key=True, index=True)
-    token = Column(String(40))
-    expire_time = Column(DateTime)
+    credit_sum = Column(Integer, default=0)
+    lottery_sum = Column(Integer, default=0)  # 小保底计数
+    lottery_Ssum = Column(Integer, default=0)  # 大保底计数
+    last_qd_time = Column(DateTime, default=datetime.datetime(1970, 1, 1, 0, 0))  # 最后签到时间
+    lq_count = Column(Integer, default=0)  # 连签天数
+    token = Column(String(40), default="")
+    expire_time = Column(DateTime, default=datetime.datetime(1970, 1, 1, 0, 0))
 
 
 # 好习惯模板表
@@ -90,15 +81,6 @@ class habit_plaza(Base):
     habit_heat = Column(Integer)
     habit_create_time = Column(DateTime)
     habit_isvisible = Column(Boolean, default=True)
-
-
-# 积分表
-class credit(Base):
-    __tablename__ = "credit"
-    uid = Column(Integer, ForeignKey(user.uid), primary_key=True, index=True)
-    credit_sum = Column(Integer)
-    lottery_sum = Column(Integer, default=0)  # 小保底计数
-    lottery_Ssum = Column(Integer, default=0)  # 大保底计数
 
 
 # 积分记录表

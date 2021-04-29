@@ -158,16 +158,10 @@ async def log_in(uname: str, upwd: str):
         cpwd = cuser.user_pwd
         cuid = cuser.uid
         if upwd == cpwd:  # 验证账号密码
-            isexist = sql.session.query(sql.token_list.token).filter(sql.token_list.uid == cuid).first()
             timenext = datetime.datetime.now() + datetime.timedelta(days=3)
             token = hashlib.sha1(os.urandom(32)).hexdigest()
-            if isexist is None:
-                new_token = sql.token_list(uid=cuid, token=token,
-                                           expire_time=timenext)
-                sql.session.add(new_token)
-            else:
-                sql.session.query(sql.token_list).filter(sql.token_list.uid == cuid) \
-                    .update({"token": token, "expire_time": timenext})
+            sql.session.query(sql.user).filter(sql.user.uid == cuid) \
+                .update({"token": token, "expire_time": timenext})
             sql.session.commit()
             return {"code": 0, "uid": cuid, "user_name": uname, "user_profile": cuser.user_profile, "user_token": token}
         else:
@@ -196,16 +190,11 @@ async def login_WX(uname: str, upwd: str):
         cpwd = cuser.user_pwd
         cuid = cuser.uid
         if upwd == cpwd:  # 验证账号密码
-            isexist = sql.session.query(sql.token_list.token).filter(sql.token_list.uid == cuid).first()
+            isexist = sql.session.query(sql.user.token).filter(sql.user.uid == cuid).first()
             timenext = datetime.datetime.now() + datetime.timedelta(days=3)
             token = hashlib.sha1(os.urandom(32)).hexdigest()
-            if isexist is None:
-                new_token = sql.token_list(uid=cuid, token=token,
-                                           expire_time=timenext)
-                sql.session.add(new_token)
-            else:
-                sql.session.query(sql.token_list).filter(sql.token_list.uid == cuid) \
-                    .update({"token": token, "expire_time": timenext})
+            sql.session.query(sql.user).filter(sql.user.uid == cuid) \
+                .update({"token": token, "expire_time": timenext})
             sql.session.commit()
             return {"code": 0, "uid": cuid, "user_profile": cuser.user_profile, "user_token": token}
         else:
@@ -260,26 +249,21 @@ async def clock_in(uid: int, token: str):
         cuid = veriToken.verification_token(uid, token)
         if cuid != -1:
             sql.session.commit()  # 清除查询缓存
-            if sql.session.query(sql.clock_in).filter(
-                    sql.clock_in.uid == cuid,
-                    func.to_days(sql.clock_in.last_qd_time) == func.to_days(func.now())).first() is not None:
+            if sql.session.query(sql.user).filter(
+                    sql.user.uid == cuid,
+                    func.to_days(sql.user.last_qd_time) == func.to_days(func.now())).first() is not None:
                 return {"code": -1, "Msg": "签到失败，你今天已经签到过了"}
-            lqobj = sql.session.query(sql.clock_in).filter(sql.clock_in.uid == cuid).first()
-            if lqobj is None:
-                lqcount = 1
-                new_qd = sql.clock_in(uid=cuid, last_qd_time=datetime.datetime.now(), lq_count=1)
-                sql.session.add(new_qd)
-            else:
-                lqdate = lqobj.last_qd_time
-                lqcount = lqobj.lq_count
-                if lqdate.date() == datetime.datetime.now().date() - datetime.timedelta(days=1):
-                    lqcount = (lqcount + 1) % 8
-                    if lqcount == 0:
-                        lqcount = 1
-                else:
+            lqobj = sql.session.query(sql.user).filter(sql.user.uid == cuid).first()
+            lqdate = lqobj.last_qd_time
+            lqcount = lqobj.lq_count
+            if lqdate.date() == datetime.datetime.now().date() - datetime.timedelta(days=1):
+                lqcount = (lqcount + 1) % 8
+                if lqcount == 0:
                     lqcount = 1
-                sql.session.query(sql.clock_in).filter(sql.clock_in.uid == cuid).update(
-                    {sql.clock_in.last_qd_time: datetime.datetime.now(), sql.clock_in.lq_count: lqcount})
+            else:
+                lqcount = 1
+            sql.session.query(sql.user).filter(sql.user.uid == cuid).update(
+                {sql.user.last_qd_time: datetime.datetime.now(), sql.user.lq_count: lqcount})
             if credit.credit_add(cuid, 10 * lqcount, "每日签到") == 0:  # 连签积分加成
                 sql.session.commit()
                 return {"code": 0, "Msg": "签到成功，积分+" + str(10 * lqcount)}
@@ -323,7 +307,7 @@ async def invalidate_token(uid: int, token: str):
     cuid = veriToken.verification_token(uid, token)
     try:
         if cuid != -1:
-            rtn = sql.session.query(sql.token_list).filter(sql.token_list.uid == cuid).delete()
+            rtn = sql.session.query(sql.user).filter(sql.user.uid == cuid).update({sql.user.token: ""})
             sql.session.commit()
             if rtn == 1:
                 return {"code": 0, "Msg": "登出成功"}
@@ -464,7 +448,7 @@ async def add_habit(uid: int, token: str, hname: str, hcontent: str, hcategory: 
     cuid = veriToken.verification_token(uid, token)
     try:
         if cuid != -1:
-            if len(hcategory) == 0:
+            if hcategory is None or len(hcategory) == 0:
                 hcategory = "其他"
             new_habit = sql.good_habits(create_uid=cuid, habit_name=hname, habit_content=hcontent,
                                         habit_category=hcategory, habit_create_time=datetime.datetime.now())
