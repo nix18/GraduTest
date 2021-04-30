@@ -640,7 +640,8 @@ async def habit_clock_in(uid: int, token: str, rhid: int):
             # 正常打卡 sql=3
             bonus = int(habit_to_clock_in.bonus / (habit_to_clock_in.target_days - habit_to_clock_in.persist_days)
                         - int(random() * 10))
-            bonus = 1 if bonus == 0 else bonus  # 判断返还积分是否为0
+            if bonus <= 0:  # 判断返还积分是否为0
+                bonus = 1
             sql.session.query(sql.running_habits).filter(sql.running_habits.rhid == rhid).update(
                 {sql.running_habits.persist_days: sql.running_habits.persist_days + 1,
                  sql.running_habits.last_qd_time: datetime.datetime.now(),
@@ -722,7 +723,7 @@ async def habit_plaza():
 
 if __name__ == '__main__':
     pool = Pool(processes=3)
-    pool.apply_async(genHabitPlazaWorker.gen, args=(10, False))
+    pool.apply_async(genHabitPlazaWorker.gen, args=(20, True))
     pool.apply_async(weixinRemindWorker.worker, args=(180, False))
     pool.apply_async(genUserScoreWorker.gen, args=("23:30", True))
     print("主进程 [%s]" % os.getpid())

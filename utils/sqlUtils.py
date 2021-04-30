@@ -10,8 +10,8 @@ SQLALCHEMY_DATABASE_URI: str = 'mysql+pymysql://habitsys_final:FTk8BPzitCXPkGc7@
                                '/habitsys_final'
 # 生成一个SQLAlchemy引擎
 engine = create_engine(SQLALCHEMY_DATABASE_URI, pool_pre_ping=True)
+
 # 生成sessionlocal类，这个类的每一个实例都是一个数据库的会话
-# 注意命名为SessionLocal，与sqlalchemy的session分隔开
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 session = SessionLocal()
 Base = declarative_base()
