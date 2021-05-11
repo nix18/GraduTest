@@ -190,7 +190,6 @@ async def login_WX(uname: str, upwd: str):
         cpwd = cuser.user_pwd
         cuid = cuser.uid
         if upwd == cpwd:  # 验证账号密码
-            isexist = sql.session.query(sql.user.token).filter(sql.user.uid == cuid).first()
             timenext = datetime.datetime.now() + datetime.timedelta(days=3)
             token = hashlib.sha1(os.urandom(32)).hexdigest()
             sql.session.query(sql.user).filter(sql.user.uid == cuid) \
