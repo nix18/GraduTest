@@ -722,7 +722,7 @@ async def habit_plaza():
 
 if __name__ == '__main__':
     pool = Pool(processes=3)
-    pool.apply_async(genHabitPlazaWorker.gen, args=(20, True))
+    pool.apply_async(genHabitPlazaWorker.gen, args=(20, False))
     pool.apply_async(weixinRemindWorker.worker, args=(180, False))
     pool.apply_async(genUserScoreWorker.gen, args=("23:30", True))
     print("主进程 [%s]" % os.getpid())
